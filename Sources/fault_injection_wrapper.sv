@@ -1,10 +1,10 @@
 module fault_injection_wrapper
   #(
-    parameter int fault_count = 16,  //GOTO: faults_database
-    parameter int random_seed = 42,  //GOTO: faults_database
-    parameter int disturb_count = 4, //GOTO: faults_database/fault_model
-    parameter int static_count = 16, //GOTO: faults_database/fault_model
-    parameter int watch_depth = 8,   //GOTO: faults_database/fault_model
+    parameter int fault_count = 16,  //GOTO: /faults_database
+    parameter int random_seed = 42,  //GOTO: /faults_database
+    parameter int disturb_count = 4, //GOTO: /faults_database/fault_model
+    parameter int static_count = 16, //GOTO: /faults_database/fault_model
+    parameter int watch_depth = 8,   //GOTO: /faults_database/fault_model
     parameter int addrW = 8,
     parameter int dataW = 32
   ) (
