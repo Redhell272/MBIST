@@ -139,7 +139,7 @@ module fault_model
     assign overwrite_r = fault_read_d && (fault_reg != fault_primitive);
 
     assign fault_w = overwrite_w ? fault_bitmask : '0;
-    assign fault_r = '0;
+    assign fault_r = overwrite_r ? fault_bitmask : '0;
 
     //Instances
 
