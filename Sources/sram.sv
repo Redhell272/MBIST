@@ -11,7 +11,7 @@ module sram
     input  logic [dataW-1:0] bwe_n,
     input  logic [dataW-1:0] din,
     //Read
-    input  logic                 re_n,
+    input  logic             re_n,
     output logic [dataW-1:0] dout
   );
 
