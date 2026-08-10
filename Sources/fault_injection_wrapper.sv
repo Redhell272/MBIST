@@ -28,14 +28,6 @@ module fault_injection_wrapper
     logic [dataW-1:0] fault_w;
     logic [dataW-1:0] fault_r;
 
-    fault_insert #(
-      .dataW(dataW)
-    ) WriteInsert (
-      .i(din),
-      .f(fault_w),
-      .o(data_in)
-    );
-
     faults_database #(
       .fault_count(fault_count),
       .random_seed(random_seed),
@@ -61,10 +53,10 @@ module fault_injection_wrapper
 
     fault_insert #(
       .dataW(dataW)
-    ) ReadInsert (
-      .i(data_out),
-      .f(fault_r),
-      .o(dout)
+    ) WriteInsert (
+      .i(din),
+      .f(fault_w),
+      .o(data_in)
     );
 
     sram #(
@@ -81,6 +73,14 @@ module fault_injection_wrapper
       // Read
       .re_n(re_n),
       .dout(data_out)
+    );
+
+    fault_insert #(
+      .dataW(dataW)
+    ) ReadInsert (
+      .i(data_out),
+      .f(fault_r),
+      .o(dout)
     );
 
 endmodule
