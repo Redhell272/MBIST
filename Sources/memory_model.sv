@@ -22,8 +22,9 @@ module memory_model
     output logic [dataW-1:0] dout,
     //MBIST Interface
     input  logic             mbist_en,
+    output logic             mbist_fault,
     output logic [addrW-1:0] mbist_fault_addr,
-    output logic [dataW-1:0] mbist_fault
+    output logic [dataW-1:0] mbist_fault_data
   );
     
     logic             mem_cs_n;
@@ -51,7 +52,8 @@ module memory_model
     assign mem_din    = mbist_sel ? mbist_din    : din;
     assign mem_re_n   = mbist_sel ? mbist_re_n   : re_n;
 
-    assign dout       = mbist_sel ? mbist_dout   : mem_dout;
+    assign mbist_dout = mbist_sel ? mem_dout : '0;
+    assign dout       = mbist_sel ? '0 : mem_dout;
 
     mbist #(
 

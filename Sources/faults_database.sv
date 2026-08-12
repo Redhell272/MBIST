@@ -23,16 +23,18 @@ module faults_database
   );
 
     // Additional Parameter Gen
-    integer dataAddrW = addrW + $clog2(dataW); //GOTO: fault_model
+    localparam int dataAddrW = addrW + $clog2(dataW); //GOTO: fault_model
 
     // Random Values for Fault Coding
     logic           [0:0] fault_primitive_list[fault_count-1:0];
     logic [dataAddrW-1:0] fault_addr_list[fault_count-1:0];
     integer i;
+    integer seed;
     initial begin
+        seed = random_seed;
         for (i = 0; i < fault_count; i = i + 1) begin
-            fault_primitive_list[i] = $random(random_seed);
-            fault_addr_list[i]      = $random(random_seed);
+            fault_primitive_list[i] = $random(seed);
+            fault_addr_list[i]      = $random(seed);
         end
     end
 
