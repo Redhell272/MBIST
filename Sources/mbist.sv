@@ -11,6 +11,8 @@ module mbist
     output logic             mbist_fault,
     output logic [addrW-1:0] mbist_fault_addr,
     output logic [dataW-1:0] mbist_fault_data,
+    output logic [dataW-1:0] mbist_fault_dout,
+    output logic [dataW-1:0] mbist_fault_expc,
     //Memory Port
     output logic             cs_n,
     output logic [addrW-1:0] addr,
@@ -22,7 +24,7 @@ module mbist
   );
 
     //Registers
-    reg       [2:0] mbist_state;
+    reg       [3:0] mbist_state;
 
     reg [addrW-1:0] mbist_addr;
     reg [dataW-1:0] mbist_bwe_n;
@@ -56,13 +58,13 @@ module mbist
     assign re_n = mbist_en ? mbist_re_n : 1'b1;
     assign mbist_dout = mbist_en ? dout : '0;
 
-    assign bwe_ends = {mbist_bwe_n[dataW-1], mbist_bwe_n[dataW-2], mbist_bwe_n[1], mbist_bwe_n[0]};
+    assign bwe_ends = {!mbist_bwe_n[dataW-1], !mbist_bwe_n[dataW-2], !mbist_bwe_n[1], !mbist_bwe_n[0]};
     assign addr_ends = {mbist_addr == (2**addrW-1), mbist_addr == (2**addrW-2), mbist_addr == 1, mbist_addr == 0};
 
     assign mbist_sel = (mbist_state[3] == 1'b1) || ((mbist_state == 4'b0010) || (mbist_state == 4'b0100));
 
-    assign bwe_shift = mbist_sel ? {!mbist_state[2], mbist_state[2]} : 2'b11;
-    assign addr_cnt = mbist_sel ? {!mbist_state[2] && bwe_ends[0], mbist_state[2] && bwe_ends[3]} : 2'b11;
+    assign bwe_shift = mbist_sel ? {mbist_state[2], !mbist_state[2]} : 2'b11;
+    assign addr_cnt = mbist_sel ? {mbist_state[2] && bwe_ends[0], !mbist_state[2] && bwe_ends[3]} : 2'b11;
 
     assign mbist_cs_n = mbist_sel ? 1'b0 : 1'b1;
     assign mbist_we_n = mbist_sel ? !mbist_state[1] : 1'b1;
@@ -71,9 +73,11 @@ module mbist
     assign data_in = mbist_sel ? mbist_state[0] : 1'b0;
     assign mbist_din = data_in ? '1 : '0;
 
-    assign mbist_fault = mbist_sel && comp_en_d && ((mbist_dout & ~mbist_bwe_n) != (mbist_din_d & ~mbist_bwe_n));
+    assign mbist_fault = mbist_sel && comp_en_d && ((mbist_dout & ~mbist_bwe_d) != (mbist_din_d & ~mbist_bwe_d));
     assign mbist_fault_addr = mbist_fault ? mbist_addr_d : '0;
-    assign mbist_fault_data = mbist_fault ? ~mbist_bwe_n : '0;
+    assign mbist_fault_data = mbist_fault ? ~mbist_bwe_d : '0;
+    assign mbist_fault_dout = mbist_fault ? mbist_dout : '0;
+    assign mbist_fault_expc = mbist_fault ? mbist_din_d : '0;
 
     //Instances
 
@@ -173,7 +177,7 @@ module mbist
 
           4'b1010: begin // M2 - up w0
             if (mbist_en == 1'b0) mbist_state <= 4'b0000;
-            else if (addr_ends[2] == 1'b1 && bwe_ends[2] == 1'b1) begin
+            else if (addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
               mbist_state <= 4'b1100;
             end
           end

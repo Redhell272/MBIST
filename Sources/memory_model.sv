@@ -24,7 +24,9 @@ module memory_model
     input  logic             mbist_en,
     output logic             mbist_fault,
     output logic [addrW-1:0] mbist_fault_addr,
-    output logic [dataW-1:0] mbist_fault_data
+    output logic [dataW-1:0] mbist_fault_data,
+    output logic [dataW-1:0] mbist_fault_dout,
+    output logic [dataW-1:0] mbist_fault_expc
   );
     
     logic             mem_cs_n;
@@ -67,6 +69,8 @@ module memory_model
       .mbist_fault(mbist_fault),
       .mbist_fault_addr(mbist_fault_addr),
       .mbist_fault_data(mbist_fault_data),
+      .mbist_fault_dout(mbist_fault_dout),
+      .mbist_fault_expc(mbist_fault_expc),
       //Memory Port
       .cs_n(mbist_cs_n),
       .addr(mbist_addr),

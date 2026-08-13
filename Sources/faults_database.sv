@@ -117,10 +117,10 @@ module fault_model
     reg fault_read_d;
 
     //Wires
-    logic fault_dataAddr;
-    logic fault_bitmask;
-
+    logic [(dataAddrW-addrW)-1:0] fault_dataAddr;
+    logic [dataW-1:0] fault_bitmask;
     logic fault_din;
+
     logic fault_access;
     logic fault_write;
     logic fault_read;
@@ -131,8 +131,8 @@ module fault_model
     //Assigns
     assign fault_dataAddr = fault_addr[dataAddrW-1:addrW];
     assign fault_bitmask = 1 << fault_dataAddr;
-
     assign fault_din = din[fault_dataAddr];
+    
     assign fault_access = (addr == fault_addr[addrW-1:0]) && !cs_n;
     assign fault_write = fault_access && !we_n && !bwe_n[fault_dataAddr];
     assign fault_read = fault_access && !re_n;
