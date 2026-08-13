@@ -56,9 +56,25 @@ module memory_model
     assign dout       = mbist_sel ? '0 : mem_dout;
 
     mbist #(
-
+      .addrW(addrW),
+      .dataW(dataW)
     ) MBIST (
-
+      .clk(clk),
+      .nres(nres),
+      //MBIST Interface
+      .mbist_en(mbist_en),
+      .mbist_sel(mbist_sel),
+      .mbist_fault(mbist_fault),
+      .mbist_fault_addr(mbist_fault_addr),
+      .mbist_fault_data(mbist_fault_data),
+      //Memory Port
+      .cs_n(mbist_cs_n),
+      .addr(mbist_addr),
+      .we_n(mbist_we_n),
+      .bwe_n(mbist_bwe_n),
+      .din(mbist_din),
+      .re_n(mbist_re_n),
+      .dout(mbist_dout)
     );
 
     fault_injection_wrapper #(
