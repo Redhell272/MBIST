@@ -2,7 +2,7 @@
 //Test Logic Switch
 module testbench;
 
-  localparam int fault_count = 16;
+  localparam int fault_count = 32;
   localparam int random_seed = 42;
   localparam int disturb_count = 4;
   localparam int static_count = 16;
@@ -21,10 +21,12 @@ module testbench;
   wire [dataW-1:0] dout;
   reg mbist_en=1'b0;
   wire mbist_fault;
+  wire       [3:0] mbist_fault_state;
   wire [addrW-1:0] mbist_fault_addr;
   wire [dataW-1:0] mbist_fault_data;
   wire [dataW-1:0] mbist_fault_dout;
   wire [dataW-1:0] mbist_fault_expc;
+  integer log_fd;
   
   // Instantiate Units Under Test
   memory_model #(
@@ -51,6 +53,7 @@ module testbench;
     //MBIST Interface
     .mbist_en(mbist_en),
     .mbist_fault(mbist_fault),
+    .mbist_fault_state(mbist_fault_state),
     .mbist_fault_addr(mbist_fault_addr),
     .mbist_fault_data(mbist_fault_data),
     .mbist_fault_dout(mbist_fault_dout),
@@ -63,6 +66,7 @@ module testbench;
     // Dump variables for editing
     $dumpfile("testbench.vcd");
     $dumpvars();
+    log_fd = $fopen("testbench.log");
     
     //Testbench Inputs
     #20 nres=1;
@@ -87,22 +91,22 @@ module testbench;
 
   initial begin
     @(posedge nres);
-    $display("================================================================");
-    $display("[Fault Injection] %0d Faults Injected:", fault_count);
+    $fdisplay(log_fd | 32'h1, "================================================================");
+    $fdisplay(log_fd | 32'h1, "[Fault Injection] %0d Faults Injected:", fault_count);
     for (int i = 0; i < fault_count; i++) begin
-      $display("  [%02d] addr=0x%02h bit=0x%02h primitive=0x%0h",
+      $fdisplay(log_fd | 32'h1, "  [%02d] addr=0x%02h bit=%02d primitive=0x%0h",
         i,
         DUT.MEM.FaultDB.fault_addr_list[i][addrW-1:0],
         DUT.MEM.FaultDB.fault_addr_list[i] >> addrW,
         DUT.MEM.FaultDB.fault_primitive_list[i]);
     end
-    $display("================================================================");
-    $display("Starting Simulation...");
-    $display("================================================================");
+    $fdisplay(log_fd | 32'h1, "================================================================");
+    $fdisplay(log_fd | 32'h1, "Starting Simulation...");
+    $fdisplay(log_fd | 32'h1, "================================================================");
   end
   
   always @(posedge mbist_fault)
-    #5 $display("[MBIST] Fault at addr=0x%02h data=0x%08h dout=0x%08h expec=0x%08h", mbist_fault_addr, mbist_fault_data, mbist_fault_dout, mbist_fault_expc);
+    #5 $fdisplay(log_fd | 32'h1, "[MBIST] Fault at addr=0x%02h data=0x%08h state=0x%01h dout=0x%08h expc=0x%08h", mbist_fault_addr, mbist_fault_data, mbist_fault_state, mbist_fault_dout, mbist_fault_expc);
 
   //Clocks
   always
@@ -111,9 +115,10 @@ module testbench;
   //Simulation Runtime
   initial begin
     #1000000;
-    $display("================================================================");
-    $display("Simulation Finished.");
-    $display("================================================================");
+    $fdisplay(log_fd | 32'h1, "================================================================");
+    $fdisplay(log_fd | 32'h1, "Simulation Finished.");
+    $fdisplay(log_fd | 32'h1, "================================================================");
+    $fclose(log_fd);
     $finish;
   end
   

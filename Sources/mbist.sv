@@ -9,6 +9,7 @@ module mbist
     input  logic             mbist_en,
     output logic             mbist_sel,
     output logic             mbist_fault,
+    output logic       [3:0] mbist_fault_state,
     output logic [addrW-1:0] mbist_fault_addr,
     output logic [dataW-1:0] mbist_fault_data,
     output logic [dataW-1:0] mbist_fault_dout,
@@ -30,6 +31,7 @@ module mbist
     reg [dataW-1:0] mbist_bwe_n;
 
     reg             comp_en_d;
+    reg       [3:0] mbist_state_d;
     reg [addrW-1:0] mbist_addr_d;
     reg [dataW-1:0] mbist_bwe_d;
     reg [dataW-1:0] mbist_din_d;
@@ -74,6 +76,7 @@ module mbist
     assign mbist_din = data_in ? '1 : '0;
 
     assign mbist_fault = mbist_sel && comp_en_d && ((mbist_dout & ~mbist_bwe_d) != (mbist_din_d & ~mbist_bwe_d));
+    assign mbist_fault_state = mbist_fault ? mbist_state_d : '0;
     assign mbist_fault_addr = mbist_fault ? mbist_addr_d : '0;
     assign mbist_fault_data = mbist_fault ? ~mbist_bwe_d : '0;
     assign mbist_fault_dout = mbist_fault ? mbist_dout : '0;
@@ -88,11 +91,13 @@ module mbist
     begin
       if (nres == 0) begin
         comp_en_d <= 1'b0;
+        mbist_state_d <= '0;
         mbist_addr_d <= '0;
         mbist_bwe_d <= '1;
         mbist_din_d <= '0;
       end else begin
         comp_en_d <= mbist_sel && !mbist_re_n;
+        mbist_state_d <= mbist_state;
         mbist_addr_d <= mbist_addr;
         mbist_bwe_d <= mbist_bwe_n;
         mbist_din_d <= mbist_din;
