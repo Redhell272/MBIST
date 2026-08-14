@@ -62,7 +62,7 @@ for i, fault in enumerate(faults):
     reads = ""
     for read in fault[1]:
         reads += f'[{state_map(read[0])}:r{read[2]}]'
-    print(f'[{i:02d}] addr=0x{fault[0][0]:02X} bit={fault[0][1]:02d} prim={primitives[i]} | Failing Reads={reads} n={n}')
+    print(f'[{i:02d}] addr=0x{fault[0][0]:02X} bit={fault[0][1]:02d} prim=0x{primitives[i]:05X} | Failing Reads={reads} n={n}')
 
     if n > 0:
         n_found += 1
@@ -75,10 +75,11 @@ for i, fault in enumerate(faults):
     if len(fault[1]) == 0:
         undetected_faults.append(i)
 
-print(f'Undetected Faults:')
-for i in undetected_faults:
-    print(f'[{i:02d}] addr=0x{faults[i][0][0]:02X} bit={faults[i][0][1]:02d} prim={primitives[i]}')
-print()
+if len(undetected_faults) != 0:
+    print(f'Undetected Faults:')
+    for i in undetected_faults:
+        print(f'[{i:02d}] addr=0x{faults[i][0][0]:02X} bit={faults[i][0][1]:02d} prim=0x{primitives[i]:05X}')
+    print()
 
 # Analyze linked faults
 first_faults = []
@@ -99,7 +100,8 @@ for cell in linked_fault_cells:
             fault_indices.append(i)
     linked_faults.append(fault_indices)
 
-print(f'Linked Faults:')
-for indices in linked_faults:
-    print(f'addr=0x{faults[indices[0]][0][0]:02X} bit={faults[indices[0]][0][1]:02d} has linked faults {indices} | Primitives {[primitives[i] for i in indices]}')
-print()
+if len(linked_faults) != 0:
+    print(f'Linked Faults:')
+    for indices in linked_faults:
+        print(f'addr=0x{faults[indices[0]][0][0]:02X} bit={faults[indices[0]][0][1]:02d} has linked faults {indices} | Primitives {[primitives[i] for i in indices]}')
+    print()

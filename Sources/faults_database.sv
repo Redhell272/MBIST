@@ -26,7 +26,7 @@ module faults_database
     localparam int dataAddrW = addrW + $clog2(dataW); //GOTO: fault_model
 
     // Random Values for Fault Coding
-    logic           [0:0] fault_primitive_list[fault_count-1:0];
+    logic          [19:0] fault_primitive_list[fault_count-1:0];
     logic [dataAddrW-1:0] fault_addr_list[fault_count-1:0];
     integer i;
     integer seed;
@@ -105,7 +105,7 @@ module fault_model
     input  logic [dataW-1:0] din,
     input  logic             re_n,
     //Fault Coding
-    input  logic                 fault_primitive,
+    input  logic          [19:0] fault_primitive,
     input  logic [dataAddrW-1:0] fault_addr,
     //Fault Injection
     output logic [dataW-1:0] fault_w,
@@ -138,7 +138,7 @@ module fault_model
     assign fault_read = fault_access && !re_n;
 
     assign overwrite_w = fault_write && (fault_din != fault_reg);
-    assign overwrite_r = fault_read_d && (fault_reg != fault_primitive);
+    assign overwrite_r = fault_read_d && (fault_reg != fault_primitive[0]);
 
     assign fault_w = overwrite_w ? fault_bitmask : '0;
     assign fault_r = overwrite_r ? fault_bitmask : '0;
@@ -151,7 +151,7 @@ module fault_model
     begin
       if (nres == 0) begin
         fault_read_d <= 1'b0;
-        fault_reg <= fault_primitive;
+        fault_reg <= fault_primitive[0];
       end else begin
         fault_read_d <= fault_read;
         if (fault_write && !overwrite_w) begin
