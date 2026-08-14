@@ -1,4 +1,4 @@
-`timescale 1ns/1ps
+`timescale 1ns/1ns
 //Test Logic Switch
 module testbench;
 
@@ -7,7 +7,7 @@ module testbench;
   localparam int disturb_count = 4;
   localparam int static_count = 16;
   localparam int watch_depth = 8;
-  localparam int addrW = 8;
+  localparam int addrW = 11;
   localparam int dataW = 32;
 
   reg clk=1'b0;
@@ -72,20 +72,28 @@ module testbench;
     #20 nres=1;
 
     #20 cs_n=0;
-    #10 addr=8'h00; we_n=0; bwe_n=32'h00000000; din=32'h00000000;
-    #10 addr=8'h01; we_n=0; bwe_n=32'h00000000; din=32'h01010101;
-    #10 addr=8'h02; we_n=0; bwe_n=32'h00000000; din=32'h02020202;
-    #10 addr=8'h03; we_n=0; bwe_n=32'h00000000; din=32'h03030303;
-    #10 addr=8'h00; we_n=1; bwe_n=32'hFFFFFFFF; din=32'h00000000;
-    #10 addr=8'h00; re_n=0;
-    #10 addr=8'h01; re_n=0;
-    #10 addr=8'h02; re_n=0;
-    #10 addr=8'h03; re_n=0;
-    #10 addr=8'h00; re_n=1;
+    #10 addr=0; we_n=0; bwe_n='0; din=32'h00000000;
+    #10 addr=1; we_n=0; bwe_n='0; din=32'h01010101;
+    #10 addr=2; we_n=0; bwe_n='0; din=32'h02020202;
+    #10 addr=3; we_n=0; bwe_n='0; din=32'h03030303;
+    #10 addr=0; we_n=1; bwe_n='1; din=32'h00000000;
+    #10 addr=0; re_n=0;
+    #10 addr=1; re_n=0;
+    #10 addr=2; re_n=0;
+    #10 addr=3; re_n=0;
+    #10 addr=0; re_n=1;
     #20 cs_n=1;
 
     #20 mbist_en=1;
-    #0820000 mbist_en=0;
+    wait(DUT.MBIST.mbist_state == 4'b0001); // wait for MBIST END state
+    #20 mbist_en=0;
+
+    #10000;
+    $fdisplay(log_fd | 32'h1, "================================================================");
+    $fdisplay(log_fd | 32'h1, "Simulation Finished.");
+    $fdisplay(log_fd | 32'h1, "================================================================");
+    $fclose(log_fd);
+    $finish;
 
   end
 
@@ -108,18 +116,8 @@ module testbench;
   always @(posedge mbist_fault)
     #5 $fdisplay(log_fd | 32'h1, "[MBIST] Fault at addr=0x%02h data=0x%08h state=0x%01h dout=0x%08h expc=0x%08h", mbist_fault_addr, mbist_fault_data, mbist_fault_state, mbist_fault_dout, mbist_fault_expc);
 
-  //Clocks
+  //Clock
   always
     #5 clk = ~clk;   // 100 Mhz clock
-  
-  //Simulation Runtime
-  initial begin
-    #1000000;
-    $fdisplay(log_fd | 32'h1, "================================================================");
-    $fdisplay(log_fd | 32'h1, "Simulation Finished.");
-    $fdisplay(log_fd | 32'h1, "================================================================");
-    $fclose(log_fd);
-    $finish;
-  end
   
 endmodule
