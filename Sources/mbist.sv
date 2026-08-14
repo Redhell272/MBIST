@@ -65,9 +65,6 @@ module mbist
 
     assign mbist_sel = (mbist_state[3] == 1'b1) || ((mbist_state == 4'b0010) || (mbist_state == 4'b0100));
 
-    assign bwe_shift = mbist_sel ? {mbist_state[2], !mbist_state[2]} : 2'b11;
-    assign addr_cnt = mbist_sel ? {mbist_state[2] && bwe_ends[0], !mbist_state[2] && bwe_ends[3]} : 2'b11;
-
     assign mbist_cs_n = mbist_sel ? 1'b0 : 1'b1;
     assign mbist_we_n = mbist_sel ? !mbist_state[1] : 1'b1;
     assign mbist_re_n = mbist_sel ? mbist_state[1] : 1'b1;
@@ -234,5 +231,19 @@ module mbist
     end
 
   //------------------------------ Combinational ----------------------------
+    always_comb begin
+        if (mbist_sel) begin
+            if (mbist_state == 4'b1010 && addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
+              bwe_shift = 2'b00;
+              addr_cnt  = 2'b00;
+            end else begin
+              bwe_shift = {mbist_state[2], !mbist_state[2]};
+              addr_cnt  = {mbist_state[2] && bwe_ends[0], !mbist_state[2] && bwe_ends[3]};
+            end
+        end else begin
+            bwe_shift = 2'b11;
+            addr_cnt  = 2'b11;
+        end
+    end
 
 endmodule
