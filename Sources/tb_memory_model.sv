@@ -2,12 +2,12 @@
 //Test Logic Switch
 module testbench;
 
-  localparam int fault_count = 32;
+  localparam int fault_count = 128;
   localparam int random_seed = 42;
   localparam int disturb_count = 4;
   localparam int static_count = 16;
   localparam int watch_depth = 8;
-  localparam int addrW = 11;
+  localparam int addrW = 8;
   localparam int dataW = 32;
 
   reg clk=1'b0;
