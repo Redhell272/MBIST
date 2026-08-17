@@ -137,11 +137,11 @@ module fault_model
     assign fault_write = fault_access && !we_n && !bwe_n[fault_dataAddr];
     assign fault_read = fault_access && !re_n;
 
-    assign overwrite_w = fault_write && (fault_din != fault_reg);
-    assign overwrite_r = fault_read_d && (fault_reg != fault_primitive[0]);
+    assign overwrite_w = fault_din != fault_reg;
+    assign overwrite_r = fault_reg != fault_primitive[0];
 
-    assign fault_w = overwrite_w ? fault_bitmask : '0;
-    assign fault_r = overwrite_r ? fault_bitmask : '0;
+    assign fault_w = fault_write && overwrite_w ? fault_bitmask : '0;
+    assign fault_r = fault_read_d && overwrite_r ? fault_bitmask : '0;
 
     //Instances
 
