@@ -163,7 +163,7 @@ module fault_model
 
     // Processes
   //------------------------------- Sequential ------------------------------
-    always @(negedge clk or negedge nres)
+    always @(posedge clk or negedge nres)
     begin
       if (nres == 0) begin
         fault_read_d <= 1'b0;

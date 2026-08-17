@@ -9,7 +9,7 @@ module mbist
     input  logic             mbist_en,
     output logic             mbist_sel,
     output logic             mbist_fault,
-    output logic       [3:0] mbist_fault_state,
+    output logic       [4:0] mbist_fault_state,
     output logic [addrW-1:0] mbist_fault_addr,
     output logic [dataW-1:0] mbist_fault_data,
     output logic [dataW-1:0] mbist_fault_dout,
@@ -25,13 +25,13 @@ module mbist
   );
 
     //Registers
-    reg       [3:0] mbist_state;
+    reg       [4:0] mbist_state;
 
     reg [addrW-1:0] mbist_addr;
     reg [dataW-1:0] mbist_bwe_n;
 
     reg             comp_en_d;
-    reg       [3:0] mbist_state_d;
+    reg       [4:0] mbist_state_d;
     reg [addrW-1:0] mbist_addr_d;
     reg [dataW-1:0] mbist_bwe_d;
     reg [dataW-1:0] mbist_din_d;
@@ -49,6 +49,8 @@ module mbist
     logic             data_in;
     logic [dataW-1:0] mbist_din;
     logic [dataW-1:0] mbist_dout;
+
+    logic       [3:0] z_state;
     
 
     //Assigns
@@ -63,7 +65,7 @@ module mbist
     assign bwe_ends = {!mbist_bwe_n[dataW-1], !mbist_bwe_n[dataW-2], !mbist_bwe_n[1], !mbist_bwe_n[0]};
     assign addr_ends = {mbist_addr == (2**addrW-1), mbist_addr == (2**addrW-2), mbist_addr == 1, mbist_addr == 0};
 
-    assign mbist_sel = (mbist_state[3] == 1'b1) || ((mbist_state == 4'b0010) || (mbist_state == 4'b0100));
+    assign mbist_sel = (mbist_state[4] == 1'b1) || ((mbist_state == 5'b01010) || (mbist_state == 5'b01100));
 
     assign mbist_cs_n = mbist_sel ? 1'b0 : 1'b1;
     assign mbist_we_n = mbist_sel ? !mbist_state[1] : 1'b1;
@@ -84,7 +86,7 @@ module mbist
     // Processes
   //------------------------------- Sequential ------------------------------
     // MBIST Inputs Delay Registers for Comparison
-    always @(negedge clk or negedge nres)
+    always @(posedge clk or negedge nres)
     begin
       if (nres == 0) begin
         comp_en_d <= 1'b0;
@@ -102,7 +104,7 @@ module mbist
     end
 
     // bWE Shift Register with selectable direction
-    always @(negedge clk or negedge nres)
+    always @(posedge clk or negedge nres)
     begin
       if (nres == 0) begin
         mbist_bwe_n[0] <= 1'b0;
@@ -120,7 +122,7 @@ module mbist
     end
 
     // Address Counter with selectable direction
-    always @(negedge clk or negedge nres)
+    always @(posedge clk or negedge nres)
     begin
       if (nres == 0) begin
         mbist_addr <= '0;
@@ -136,95 +138,103 @@ module mbist
     end
 
     // MBIST State Machine
-    always @(negedge clk or negedge nres)
+    always @(posedge clk or negedge nres)
     begin
       if (nres == 0) begin
-        mbist_state <= 4'b0000;
+        mbist_state <= 5'b00000;
       end else begin
         case (mbist_state)
 
-        // Bits: {outer / main body, up / down count, r / w operation, 0 / 1 bit}
+        // Bits: {outer / main body, dont / do count, up / down count, r / w operation, 0 / 1 bit}
 
-          4'b0000: begin // Idle
-            if (mbist_en == 1'b1) mbist_state <= 4'b0010;
+          5'b00000: begin // Idle
+            if (mbist_en == 1'b1) mbist_state <= 5'b01010;
           end
 
-          4'b0010: begin // M0 - up w0
-            if (mbist_en == 1'b0) mbist_state <= 4'b0000;
+          5'b01010: begin // M0.1 - up w0
+            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
             else if (addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
-              mbist_state <= 4'b1000;
+              mbist_state <= 5'b10000;
             end
           end
 
-          4'b1000: begin // M1 - up r0
-            if (mbist_en == 1'b0) mbist_state <= 4'b0000;
+          5'b10000: begin // M1.1 - up r0
+            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
+            else begin
+              mbist_state <= 5'b11011;
+            end
+          end
+
+          5'b11011: begin // M1.2 - up w1
+            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
             else if (addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
-              mbist_state <= 4'b1011;
+              mbist_state <= 5'b10001;
+            end else begin
+              mbist_state <= 5'b10000;
             end
           end
 
-          4'b1011: begin // M1 - up w1
-            if (mbist_en == 1'b0) mbist_state <= 4'b0000;
+          5'b10001: begin // M2.1 - up r1
+            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
+            else begin
+              mbist_state <= 5'b11010;
+            end
+          end
+
+          5'b11010: begin // M2.2 - up w0
+            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
             else if (addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
-              mbist_state <= 4'b1001;
+              mbist_state <= 5'b10100;
+            end else begin
+              mbist_state <= 5'b10001;
             end
           end
 
-          4'b1001: begin // M2 - up r1
-            if (mbist_en == 1'b0) mbist_state <= 4'b0000;
-            else if (addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
-              mbist_state <= 4'b1010;
+          5'b10100: begin // M3.1 - down r0
+            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
+            else begin
+              mbist_state <= 5'b11111;
             end
           end
 
-          4'b1010: begin // M2 - up w0
-            if (mbist_en == 1'b0) mbist_state <= 4'b0000;
-            else if (addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
-              mbist_state <= 4'b1100;
-            end
-          end
-
-          4'b1100: begin // M3 - down r0
-            if (mbist_en == 1'b0) mbist_state <= 4'b0000;
+          5'b11111: begin // M3.2 - down w1
+            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
             else if (addr_ends[0] == 1'b1 && bwe_ends[0] == 1'b1) begin
-              mbist_state <= 4'b1111;
+              mbist_state <= 5'b10101;
+            end else begin
+              mbist_state <= 5'b10100;
             end
           end
 
-          4'b1111: begin // M3 - down w1
-            if (mbist_en == 1'b0) mbist_state <= 4'b0000;
+          5'b10101: begin // M4.1 - down r1
+            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
+            else begin
+              mbist_state <= 5'b11110;
+            end
+          end
+
+          5'b11110: begin // M4.2 - down w0
+            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
             else if (addr_ends[0] == 1'b1 && bwe_ends[0] == 1'b1) begin
-              mbist_state <= 4'b1101;
+              mbist_state <= 5'b01100;
+            end else begin
+              mbist_state <= 5'b10101;
             end
           end
 
-          4'b1101: begin // M4 - down r1
-            if (mbist_en == 1'b0) mbist_state <= 4'b0000;
+          5'b01100: begin // M5.1 - down r0
+            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
             else if (addr_ends[0] == 1'b1 && bwe_ends[0] == 1'b1) begin
-              mbist_state <= 4'b1110;
+              mbist_state <= 5'b00001;
             end
           end
 
-          4'b1110: begin // M4 - down w0
-            if (mbist_en == 1'b0) mbist_state <= 4'b0000;
-            else if (addr_ends[0] == 1'b1 && bwe_ends[0] == 1'b1) begin
-              mbist_state <= 4'b0100;
-            end
-          end
-
-          4'b0100: begin // M5 - down r0
-            if (mbist_en == 1'b0) mbist_state <= 4'b0000;
-            else if (addr_ends[0] == 1'b1 && bwe_ends[0] == 1'b1) begin
-              mbist_state <= 4'b0001;
-            end
-          end
-
-          4'b0001: begin // END
-            if (mbist_en == 1'b0) mbist_state <= 4'b0000;
+          5'b00001: begin // END
+            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
           end
 
           default: begin
-            mbist_state <= 4'b0001;
+            mbist_state <= 5'b0001;
           end
         endcase
       end
@@ -232,18 +242,38 @@ module mbist
 
   //------------------------------ Combinational ----------------------------
     always_comb begin
-        if (mbist_sel) begin
-            if (mbist_state == 4'b1010 && addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
-              bwe_shift = 2'b00;
-              addr_cnt  = 2'b00;
-            end else begin
-              bwe_shift = {mbist_state[2], !mbist_state[2]};
-              addr_cnt  = {mbist_state[2] && bwe_ends[0], !mbist_state[2] && bwe_ends[3]};
-            end
-        end else begin
-            bwe_shift = 2'b11;
-            addr_cnt  = 2'b11;
-        end
+      if (mbist_sel) begin
+          if (mbist_state == 5'b11010 && addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
+            bwe_shift = 2'b00;
+            addr_cnt  = 2'b00;
+          end else begin
+            bwe_shift = { mbist_state[3] && mbist_state[2], 
+                          mbist_state[3] && !mbist_state[2]};
+            addr_cnt  = { mbist_state[3] && mbist_state[2] && bwe_ends[0], 
+                          mbist_state[3] && !mbist_state[2] && bwe_ends[3]};
+          end
+      end else begin
+          bwe_shift = 2'b11;
+          addr_cnt  = 2'b11;
+      end
+    end
+
+    always_comb begin
+      case (mbist_state)
+        5'b00000: z_state = 4'h0;
+        5'b01010: z_state = 4'h1;
+        5'b10000: z_state = 4'h2;
+        5'b11011: z_state = 4'h2;
+        5'b10001: z_state = 4'h3;
+        5'b11010: z_state = 4'h3;
+        5'b10100: z_state = 4'h4;
+        5'b11111: z_state = 4'h4;
+        5'b10101: z_state = 4'h5;
+        5'b11110: z_state = 4'h5;
+        5'b01100: z_state = 4'h6;
+        5'b00001: z_state = 4'h7;
+        default:  z_state = 4'hF;
+      endcase
     end
 
 endmodule

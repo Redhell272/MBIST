@@ -23,7 +23,7 @@ module memory_model
     //MBIST Interface
     input  logic             mbist_en,
     output logic             mbist_fault,
-    output logic       [3:0] mbist_fault_state,
+    output logic       [4:0] mbist_fault_state,
     output logic [addrW-1:0] mbist_fault_addr,
     output logic [dataW-1:0] mbist_fault_data,
     output logic [dataW-1:0] mbist_fault_dout,

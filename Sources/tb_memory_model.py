@@ -3,30 +3,30 @@ filepath = "testbench.log"
 
 def state_map(state):
     state_dict = {
-        0b0000: "IDLE",
-        0b0010: "M0.1",
-        0b1000: "M1.1",
-        0b1011: "M1.2",
-        0b1001: "M2.1",
-        0b1010: "M2.2",
-        0b1100: "M3.1",
-        0b1111: "M3.2",
-        0b1101: "M4.1",
-        0b1110: "M4.2",
-        0b0100: "M5.1",
-        0b0001: "END"}
+        0b00000: "IDLE",
+        0b01010: "M0.1",
+        0b10000: "M1.1",
+        0b11011: "M1.2",
+        0b10001: "M2.1",
+        0b11010: "M2.2",
+        0b10100: "M3.1",
+        0b11111: "M3.2",
+        0b10101: "M4.1",
+        0b11110: "M4.2",
+        0b01100: "M5.1",
+        0b00001: "END"}
     return state_dict.get(state, f"ERR({state})")
 
 def fault_type_map(fault_type):
     fault_type_dict = {
-        0b000: "SAF",
-        0b001: "DRF",
-        0b010: "TF",
-        0b011: "WDF",
-        0b100: "RDF",
-        0b101: "DRDF",
-        0b110: "IRF",
-        0b111: "RRF"}
+        0b000: "  SAF",
+        0b001: "  DRF",
+        0b010: "   TF",
+        0b011: "  WDF",
+        0b100: "  RDF",
+        0b101: " DRDF",
+        0b110: "  IRF",
+        0b111: "  RRF"}
     return fault_type_dict.get(fault_type, f"ERR({fault_type})")
 
 # Read the log file and extract the relevant information
@@ -49,22 +49,22 @@ for i in range(n_faults):
     prim = int(text_array[2 + i][3].split("=")[1], 16)
     prim_type = fault_type_map((prim >> 1) & 0x07)
     prim_text = prim_type + f'({((prim >> 4) & 0x01)})'
-    if prim_type == "DRF":
+    if prim_type == "  DRF":
         prim_text += f'({(prim >> 4):04X})'
     else:
-        prim_text += f'\t'
+        prim_text += f'      '
     primitives.append(prim_text)
 
 
 # Match the faults found by the MBIST with the faults
 for text in text_array[5 + n_faults:-3]:
-    addr = int(text[3].split("=")[1], 16)
-    bit = int(text[4].split("=")[1], 16)
+    addr = int(text[6].split("=")[1], 16)
+    bit = int(text[7].split("=")[1], 16)
     if bit != 0:
         bit = bit.bit_length() - 1
-    state = int(text[5].split("=")[1], 16)
-    dout = (int(text[6].split("=")[1], 16) >> bit) & 0x01
-    expc = (int(text[7].split("=")[1], 16) >> bit) & 0x01
+    state = int(text[8].split("=")[1], 16)
+    dout = (int(text[9].split("=")[1], 16) >> bit) & 0x01
+    expc = (int(text[10].split("=")[1], 16) >> bit) & 0x01
 
     for i in range(n_faults):
         if faults[i][0] == [addr, bit]:
@@ -79,7 +79,7 @@ for i, fault in enumerate(faults):
     reads = ""
     for read in fault[1]:
         reads += f'[{state_map(read[0])}:r{read[2]}]'
-    print(f'[{i:03d}] addr=0x{fault[0][0]:02X} bit={fault[0][1]:02d} prim={primitives[i]}\t| Failing Reads={reads} n={n}')
+    print(f'[{i:03d}] addr=0x{fault[0][0]:02X} bit={fault[0][1]:02d} prim={primitives[i]} | Failing Reads={reads} n={n}')
 
     if n > 0:
         n_found += 1

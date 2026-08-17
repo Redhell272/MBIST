@@ -21,7 +21,7 @@ module testbench;
   wire [dataW-1:0] dout;
   reg mbist_en=1'b0;
   wire mbist_fault;
-  wire       [3:0] mbist_fault_state;
+  wire       [4:0] mbist_fault_state;
   wire [addrW-1:0] mbist_fault_addr;
   wire [dataW-1:0] mbist_fault_data;
   wire [dataW-1:0] mbist_fault_dout;
@@ -85,7 +85,7 @@ module testbench;
     #20 cs_n=1;
 
     #20 mbist_en=1;
-    wait(DUT.MBIST.mbist_state == 4'b0001); // wait for MBIST END state
+    wait(DUT.MBIST.mbist_state == 5'b00001); // wait for MBIST END state
     #20 mbist_en=0;
 
     #10000;
@@ -102,7 +102,7 @@ module testbench;
     $fdisplay(log_fd | 32'h1, "================================================================");
     $fdisplay(log_fd | 32'h1, "[Fault Injection] %0d Faults Injected:", fault_count);
     for (int i = 0; i < fault_count; i++) begin
-      $fdisplay(log_fd | 32'h1, "  [%02d] addr=0x%02h bit=%02d primitive=0x%05h",
+      $fdisplay(log_fd | 32'h1, "  [%03d] addr=0x%02h bit=%02d primitive=0x%05h",
         i,
         DUT.MEM.FaultDB.fault_addr_list[i][addrW-1:0],
         DUT.MEM.FaultDB.fault_addr_list[i] >> addrW,
@@ -113,8 +113,11 @@ module testbench;
     $fdisplay(log_fd | 32'h1, "================================================================");
   end
   
-  always @(posedge mbist_fault)
-    #5 $fdisplay(log_fd | 32'h1, "[MBIST] Fault at addr=0x%02h data=0x%08h state=0x%01h dout=0x%08h expc=0x%08h", mbist_fault_addr, mbist_fault_data, mbist_fault_state, mbist_fault_dout, mbist_fault_expc);
+  always @(posedge mbist_fault) begin
+    #5;
+    if (mbist_fault == 1'b1)
+      $fdisplay(log_fd | 32'h1, "[MBIST] t=%t | Fault at addr=0x%02h data=0x%08h state=0x%02h dout=0x%08h expc=0x%08h", $time, mbist_fault_addr, mbist_fault_data, mbist_fault_state, mbist_fault_dout, mbist_fault_expc);
+  end
 
   //Clock
   always
