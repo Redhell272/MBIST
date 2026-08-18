@@ -94,12 +94,15 @@ for i, fault in enumerate(faults):
     if len(fault[1]) == 0:
         undetected_faults[primitives[i][0]].append(i)
 
+print(f'\n\nUndetected Faults by Type:\n')
 for i, undetected in enumerate(undetected_faults):
     if len(undetected) != 0:
         print(f'Undetected Faults of type{fault_type_map(i)}: (Fault Success Rate = {(1 - len(undetected)/prim_type_counts[i])*100:.2f}%)')
         for j in undetected:
             print(f'[{j:03d}] addr=0x{faults[j][0][0]:02X} bit={faults[j][0][1]:02d} prim={primitives[j][1]}')
-print()
+    else:
+        print(f'No Undetected Faults of type{fault_type_map(i)} (Fault Success Rate = 100.00%)')
+    print()
 
 # Analyze linked faults
 first_faults = []
@@ -121,7 +124,7 @@ for cell in linked_fault_cells:
     linked_faults.append(fault_indices)
 
 if len(linked_faults) != 0:
-    print(f'Linked Faults:')
+    print(f'\n\nLinked Faults:')
     for indices in linked_faults:
         print(f'addr=0x{faults[indices[0]][0][0]:02X} bit={faults[indices[0]][0][1]:02d} has linked faults {indices} | Primitives {[primitives[i][1].replace(" ", "") for i in indices]}')
     print()
