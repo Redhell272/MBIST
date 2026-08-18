@@ -122,8 +122,7 @@ module mbist
     end
 
     // Address Counter with selectable direction
-    always @(posedge clk or negedge nres)
-    begin
+    always @(posedge clk or negedge nres) begin
       if (nres == 0) begin
         mbist_addr <= '0;
       end else begin
@@ -138,8 +137,7 @@ module mbist
     end
 
     // MBIST State Machine
-    always @(posedge clk or negedge nres)
-    begin
+    always @(posedge clk or negedge nres) begin
       if (nres == 0) begin
         mbist_state <= 5'b00000;
       end else begin
@@ -234,7 +232,7 @@ module mbist
           end
 
           default: begin
-            mbist_state <= 5'b0001;
+            mbist_state <= 5'b00001;
           end
         endcase
       end

@@ -71,10 +71,20 @@ for i in range(n_faults):
     prim = int(text_array[2 + i][3].split("=")[1], 16)
     prim_type = (prim >> 1) & 0x07
     prim_text = fault_type_map(prim_type) + f'({((prim >> 4) & 0x01)})'
+    prim_watch_cnt = (prim >> 20) & 0x07
+    pattern_mask = ~(0x0FFFF << (prim_watch_cnt*2))
+    prim_watch_pattern = (prim >> 23) & pattern_mask
+
     if prim_type == 0b001:  # DRF
-        prim_text += f'({(prim >> 4):04X})'
+        prim_text += f'(t={((prim >> 4) & 0x0FFFF):04X})'
     else:
-        prim_text += f'      '
+        prim_text += f'        '
+
+    if prim_watch_cnt != 0:
+        prim_text += f'(w={prim_watch_cnt:01d})(p={prim_watch_pattern:04X})'
+    else:
+        prim_text += f'             '
+
     primitives.append([prim_type, prim_text])
     prim_type_counts[prim_type] += 1
 
