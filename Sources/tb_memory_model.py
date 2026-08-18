@@ -123,5 +123,5 @@ for cell in linked_fault_cells:
 if len(linked_faults) != 0:
     print(f'Linked Faults:')
     for indices in linked_faults:
-        print(f'addr=0x{faults[indices[0]][0][0]:02X} bit={faults[indices[0]][0][1]:02d} has linked faults {indices} | Primitives {[primitives[i][1] for i in indices]}')
+        print(f'addr=0x{faults[indices[0]][0][0]:02X} bit={faults[indices[0]][0][1]:02d} has linked faults {indices} | Primitives {[primitives[i][1].replace(" ", "") for i in indices]}')
     print()
