@@ -1,5 +1,20 @@
 
+import sys
+
 filepath = "testbench.log"
+results_filepath = "testbench.results"
+
+linebreak = "================================================================================================================================"
+
+class Tee:
+    def __init__(self, *files):
+        self.files = files
+    def write(self, obj):
+        for f in self.files:
+            f.write(obj)
+    def flush(self):
+        for f in self.files:
+            f.flush()
 
 def state_map(state):
     state_dict = {
@@ -28,6 +43,12 @@ def fault_type_map(fault_type):
         0b110: "  IRF",
         0b111: "  RRF"}
     return fault_type_dict.get(fault_type, f"ERR({fault_type})")
+
+
+
+# Log the output to both the console and a results file
+results_file = open(results_filepath, 'w')
+sys.stdout = Tee(sys.__stdout__, results_file)
 
 # Read the log file and extract the relevant information
 text_array = []
@@ -74,7 +95,9 @@ for text in text_array[5 + n_faults:-3]:
 
 
 # Print the fault detection results
-print(f'\nFault Detection by MBIST Simulation:')
+print()
+print(linebreak)
+print(f'\nFault Detection by MBIST Simulation:\n')
 n_found = 0
 for i, fault in enumerate(faults):
     n = len(fault[1])
@@ -94,12 +117,13 @@ for i, fault in enumerate(faults):
     if len(fault[1]) == 0:
         undetected_faults[primitives[i][0]].append(i)
 
-print(f'\n\nUndetected Faults by Type:\n')
+print(linebreak)
+print(f'\nUndetected Faults by Type:\n')
 for i, undetected in enumerate(undetected_faults):
     if len(undetected) != 0:
         print(f'Undetected Faults of type{fault_type_map(i)}: (Fault Success Rate = {(1 - len(undetected)/prim_type_counts[i])*100:.2f}%)')
         for j in undetected:
-            print(f'[{j:03d}] addr=0x{faults[j][0][0]:02X} bit={faults[j][0][1]:02d} prim={primitives[j][1]}')
+            print(f'  [{j:03d}] addr=0x{faults[j][0][0]:02X} bit={faults[j][0][1]:02d} prim={primitives[j][1]}')
     else:
         print(f'No Undetected Faults of type{fault_type_map(i)} (Fault Success Rate = 100.00%)')
     print()
@@ -124,7 +148,14 @@ for cell in linked_fault_cells:
     linked_faults.append(fault_indices)
 
 if len(linked_faults) != 0:
-    print(f'\n\nLinked Faults:')
+    print(linebreak)
+    print(f'\nLinked Faults:\n')
     for indices in linked_faults:
         print(f'addr=0x{faults[indices[0]][0][0]:02X} bit={faults[indices[0]][0][1]:02d} has linked faults {indices} | Primitives {[primitives[i][1].replace(" ", "") for i in indices]}')
     print()
+
+print(linebreak)
+print()
+
+sys.stdout = sys.__stdout__
+results_file.close()
