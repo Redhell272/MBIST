@@ -41,19 +41,21 @@ with open(filepath, 'r') as file:
 n_faults = int(text_array[1][2])
 faults = []
 primitives = []
+prim_type_counts = [0, 0, 0, 0, 0, 0, 0, 0]
 for i in range(n_faults):
     addr = int(text_array[2 + i][1].split("=")[1], 16)
     bit = int(text_array[2 + i][2].split("=")[1])
     faults.append([[addr, bit],[]])
 
     prim = int(text_array[2 + i][3].split("=")[1], 16)
-    prim_type = fault_type_map((prim >> 1) & 0x07)
-    prim_text = prim_type + f'({((prim >> 4) & 0x01)})'
-    if prim_type == "  DRF":
+    prim_type = (prim >> 1) & 0x07
+    prim_text = fault_type_map(prim_type) + f'({((prim >> 4) & 0x01)})'
+    if prim_type == 0b001:  # DRF
         prim_text += f'({(prim >> 4):04X})'
     else:
         prim_text += f'      '
-    primitives.append(prim_text)
+    primitives.append([prim_type, prim_text])
+    prim_type_counts[prim_type] += 1
 
 
 # Match the faults found by the MBIST with the faults
@@ -79,24 +81,25 @@ for i, fault in enumerate(faults):
     reads = ""
     for read in fault[1]:
         reads += f'[{state_map(read[0])}:r{read[2]}]'
-    print(f'[{i:03d}] addr=0x{fault[0][0]:02X} bit={fault[0][1]:02d} prim={primitives[i]} | Failing Reads={reads} n={n}')
+    print(f'[{i:03d}] addr=0x{fault[0][0]:02X} bit={fault[0][1]:02d} prim={primitives[i][1]} | Failing Reads={reads} n={n}')
 
     if n > 0:
         n_found += 1
 print(f'\nTotal Faults Detected by MBIST: {n_found} / {n_faults} = {n_found/n_faults*100:.2f}%\n')
 
 
-# Analyze undetected faults
-undetected_faults = []
+# Analyze undetected faults by type
+undetected_faults = [[],[],[],[],[],[],[],[]]
 for i, fault in enumerate(faults):
     if len(fault[1]) == 0:
-        undetected_faults.append(i)
+        undetected_faults[primitives[i][0]].append(i)
 
-if len(undetected_faults) != 0:
-    print(f'Undetected Faults:')
-    for i in undetected_faults:
-        print(f'[{i:03d}] addr=0x{faults[i][0][0]:02X} bit={faults[i][0][1]:02d} prim={primitives[i]}')
-    print()
+for i, undetected in enumerate(undetected_faults):
+    if len(undetected) != 0:
+        print(f'Undetected Faults of type{fault_type_map(i)}: (Fault Success Rate = {(1 - len(undetected)/prim_type_counts[i])*100:.2f}%)')
+        for j in undetected:
+            print(f'[{j:03d}] addr=0x{faults[j][0][0]:02X} bit={faults[j][0][1]:02d} prim={primitives[j][1]}')
+print()
 
 # Analyze linked faults
 first_faults = []
@@ -120,5 +123,5 @@ for cell in linked_fault_cells:
 if len(linked_faults) != 0:
     print(f'Linked Faults:')
     for indices in linked_faults:
-        print(f'addr=0x{faults[indices[0]][0][0]:02X} bit={faults[indices[0]][0][1]:02d} has linked faults {indices} | Primitives {[primitives[i] for i in indices]}')
+        print(f'addr=0x{faults[indices[0]][0][0]:02X} bit={faults[indices[0]][0][1]:02d} has linked faults {indices} | Primitives {[primitives[i][1] for i in indices]}')
     print()

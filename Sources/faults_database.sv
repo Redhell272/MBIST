@@ -143,14 +143,14 @@ module fault_model
     assign fault_bitmask = 1 << fault_dataAddr;
     assign fault_din = din[fault_dataAddr];
     
-    assign fault_access = (addr == fault_addr[addrW-1:0]) && !cs_n;
-    assign fault_write = fault_access && !we_n && !bwe_n[fault_dataAddr];
+    assign fault_access = (addr == fault_addr[addrW-1:0]) && !cs_n && !bwe_n[fault_dataAddr];
+    assign fault_write = fault_access && !we_n; // && !bwe_n[fault_dataAddr];
     assign fault_read = fault_access && !re_n;
 
     assign fault_init = fault_primitive[0];
     assign fault_action = fault_primitive[3:1];
     assign fault_active = cell_reg == fault_primitive[4];
-    assign fault_nonce = (fault_primitive[19:4] > 16'h0001) ? 16'h0002 : fault_primitive[19:4];
+    assign fault_nonce = (fault_primitive[19:4] < 16'h0002) ? 16'h0002 : fault_primitive[19:4];
 
     assign do_rand_cnt = fault_action == 3'b001;
     assign flip_on_read = (fault_action == 3'b100) || (fault_action == 3'b101);
