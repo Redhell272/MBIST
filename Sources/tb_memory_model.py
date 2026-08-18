@@ -69,6 +69,8 @@ for i in range(n_faults):
     faults.append([[addr, bit],[]])
 
     prim = int(text_array[2 + i][3].split("=")[1], 16)
+    disturb = int(text_array[2 + i][4].split("=")[1], 16)
+
     prim_type = (prim >> 1) & 0x07
     prim_text = fault_type_map(prim_type) + f'({((prim >> 4) & 0x01)})'
     prim_watch_cnt = (prim >> 20) & 0x07
@@ -81,9 +83,21 @@ for i in range(n_faults):
         prim_text += f'        '
 
     if prim_watch_cnt != 0:
-        prim_text += f'(w={prim_watch_cnt:01d})(p={prim_watch_pattern:04X})'
+        prim_text += f'(w={prim_watch_cnt:01d}:{prim_watch_pattern:04X})'
     else:
-        prim_text += f'             '
+        prim_text += f'          '
+
+    for j in range(4):
+        disturb_prim = (disturb >> (j*32)) & 0x0FFFFFFFF
+        disturb_addr = disturb_prim & 0x0FF
+        disturb_bit = (disturb_prim >> 8) & 0x1F
+        disturb_count = (disturb_prim >> 13) & 0x07
+        disturb_pattern = (disturb_prim >> 16) & 0x0FFFF
+        
+        if disturb_count != 0:
+            prim_text += f'(d=0x{disturb_addr:02X}:{disturb_bit:02d})'
+        else:
+            prim_text += f'           '
 
     primitives.append([prim_type, prim_text])
     prim_type_counts[prim_type] += 1
@@ -114,7 +128,7 @@ for i, fault in enumerate(faults):
     reads = ""
     for read in fault[1]:
         reads += f'[{state_map(read[0])}:r{read[2]}]'
-    print(f'[{i:03d}] addr=0x{fault[0][0]:02X} bit={fault[0][1]:02d} prim={primitives[i][1]} | Failing Reads={reads} n={n}')
+    print(f'[{i:03d}] 0x{fault[0][0]:02X}:{fault[0][1]:02d} prim={primitives[i][1]} | Failing Reads={reads} n={n}')
 
     if n > 0:
         n_found += 1
@@ -133,7 +147,7 @@ for i, undetected in enumerate(undetected_faults):
     if len(undetected) != 0:
         print(f'Undetected Faults of type{fault_type_map(i)}: (Fault Success Rate = {(1 - len(undetected)/prim_type_counts[i])*100:.2f}%)')
         for j in undetected:
-            print(f'  [{j:03d}] addr=0x{faults[j][0][0]:02X} bit={faults[j][0][1]:02d} prim={primitives[j][1]}')
+            print(f'  [{j:03d}] 0x{faults[j][0][0]:02X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
     else:
         print(f'No Undetected Faults of type{fault_type_map(i)} (Fault Success Rate = 100.00%)')
     print()

@@ -3,7 +3,7 @@ module faults_database
     parameter int fault_count = 16,  //Number of faults in database
     parameter int random_seed = 42,  //Seed for random number generation
     parameter int disturb_count = 4, //GOTO: fault_model
-    parameter int static_count = 16, //GOTO: fault_model
+    parameter int couple_count = 16, //GOTO: fault_model
     parameter int watch_depth = 8,   //GOTO: address_watcher
     parameter int addrW = 8,
     parameter int dataW = 32
@@ -23,33 +23,43 @@ module faults_database
   );
 
     // Additional Parameter Gen
-    localparam int depthW = $clog2(watch_depth);      //GOTO: address_watcher
-    localparam int primitiveW = 2*watch_depth+
-                                depthW+
-                                20;                   //GOTO: fault_model
-    localparam int dataAddrW = addrW + $clog2(dataW); //GOTO: fault_model
+    localparam int depthW = $clog2(watch_depth);         //GOTO: address_watcher
+    localparam int primitiveW = 2*watch_depth+depthW+20; //GOTO: fault_model
+    localparam int dataAddrW = addrW + $clog2(dataW);    //GOTO: fault_model
+    localparam int disturbW = primitiveW-20+dataAddrW;   //GOTO: fault_model
 
     // Random Values for Fault Coding
-    logic [primitiveW-1:0] fault_primitive_list[fault_count-1:0];
-    logic  [dataAddrW-1:0] fault_addr_list[fault_count-1:0];
     logic [primitiveW-1:0] do_advanced_faults[fault_count-1:0];
-    integer i;
+    logic [primitiveW-1:0] fault_primitive_list[fault_count-1:0];
+    logic [dataAddrW-1:0] fault_addr_list[fault_count-1:0];
+    logic [disturb_count*disturbW-1:0] disturb_primitives_list[fault_count-1:0];
+    integer i,ii;
     integer seed;
     initial begin
         seed = random_seed;
         for (i = 0; i < fault_count; i = i + 1) begin
-            do_advanced_faults[i] = $random(seed);
-            if (!do_advanced_faults[i][0]) begin
+            do_advanced_faults[i] = {$random(seed), $random(seed)};
+
+            for (ii = 0; ii < disturb_count; ii = ii + 1) begin
+              if (do_advanced_faults[i][0] && do_advanced_faults[i][4] && do_advanced_faults[i][ii+5]) begin
+                disturb_primitives_list[i][ii*disturbW +: disturbW] = {$random(seed), $random(seed)};
+              end else begin
+                disturb_primitives_list[i][ii*disturbW +: disturbW] = '0;
+                do_advanced_faults[i][ii+6] = 1'b0;
+              end
+            end
+
+            if (do_advanced_faults[i][0]) begin
               do_advanced_faults[i] = 28'h00FFFFF;
-            end else if (!do_advanced_faults[i][1]) begin
+            end else if (do_advanced_faults[i][1]) begin
               do_advanced_faults[i] = 28'h1FFFFFF;
-            end else if (!do_advanced_faults[i][2]) begin
+            end else if (do_advanced_faults[i][2]) begin
               do_advanced_faults[i] = 28'h7FFFFFF;
             end else begin
               do_advanced_faults[i] = '1;
             end
-            fault_primitive_list[i] = $random(seed) & do_advanced_faults[i];
-            fault_addr_list[i]      = $random(seed);
+            fault_primitive_list[i] = {$random(seed), $random(seed)} & do_advanced_faults[i];
+            fault_addr_list[i] = $random(seed);
         end
     end
 
@@ -61,11 +71,12 @@ module faults_database
         for (x = 0; x < fault_count; x = x + 1) begin
             fault_model #(
             .disturb_count(disturb_count),
-            .static_count(static_count),
+            .couple_count(couple_count),
             .watch_depth(watch_depth),
             .depthW(depthW),
             .primitiveW(primitiveW),
             .dataAddrW(dataAddrW),
+            .disturbW(disturbW),
             .addrW(addrW),
             .dataW(dataW)
             ) FM (
@@ -81,6 +92,7 @@ module faults_database
             //Fault Coding
             .fault_primitive(fault_primitive_list[x]),
             .fault_addr(fault_addr_list[x]),
+            .disturb_primitives(disturb_primitives_list[x]),
             //Fault Injection
             .fault_w(fault_w_list[x]),
             .fault_r(fault_r_list[x])
@@ -106,11 +118,12 @@ endmodule
 module fault_model
   #(
     parameter int disturb_count = 4, //Number of disturb aggressor addresses to watch
-    parameter int static_count = 16, //Number of static aggressor addresses to be tracked
+    parameter int couple_count = 16, //Number of static aggressor addresses to be tracked
     parameter int watch_depth = 8,   //GOTO:address_watcher
     parameter int depthW = 3,        //GOTO:address_watcher
     parameter int primitiveW = 39,   //Width of the fault primitive with all its arguments
     parameter int dataAddrW = 13,    //Address width including the bits to specify a single bit in the data word (addrW + log2(dataW))
+    parameter int disturbW = 32,     //Width of the disturb primitives
     parameter int addrW = 8,
     parameter int dataW = 32
   ) (
@@ -125,7 +138,8 @@ module fault_model
     input  logic             re_n,
     //Fault Coding
     input  logic [primitiveW-1:0] fault_primitive,
-    input  logic  [dataAddrW-1:0] fault_addr,
+    input  logic [dataAddrW-1:0] fault_addr,
+    input  logic [disturb_count*disturbW-1:0] disturb_primitives,
     //Fault Injection
     output logic [dataW-1:0] fault_w,
     output logic [dataW-1:0] fault_r
@@ -162,6 +176,8 @@ module fault_model
     logic do_rand_shf;
 
     logic fault_watch_trigger;
+    logic [disturb_count-1:0] disturb_watch_triggers;
+    logic all_watch_trigger;
 
     //Assigns
     assign fault_dataAddr = fault_addr[dataAddrW-1:addrW];
@@ -174,7 +190,9 @@ module fault_model
 
     assign fault_init = fault_primitive[0];
     assign fault_action = fault_primitive[3:1];
-    assign fault_active = (cell_reg == fault_primitive[4]) && fault_watch_trigger;
+
+    assign all_watch_trigger = fault_watch_trigger ? &disturb_watch_triggers : 1'b0;
+    assign fault_active = (cell_reg == fault_primitive[4]) && all_watch_trigger;
 
     assign fault_nonce = (fault_primitive[19:4] < 16'h0002) ? 16'h0002 : fault_primitive[19:4];
     assign fault_access_cnt = fault_primitive[depthW+19:20];
@@ -211,6 +229,35 @@ module fault_model
       //Fault Injection
       .watch_trigger(fault_watch_trigger)
     );
+
+    genvar x;
+    generate
+      for (x = 0; x < disturb_count; x = x + 1) begin
+        address_watcher #(
+          .watch_depth(watch_depth),
+          .depthW(depthW),
+          .dataAddrW(dataAddrW),
+          .addrW(addrW),
+          .dataW(dataW)
+        ) FD (
+          .clk(clk),
+          .nres(nres),
+          //Memory Port
+          .cs_n(cs_n),
+          .addr(addr),
+          .we_n(we_n),
+          .bwe_n(bwe_n),
+          .din(din),
+          .re_n(re_n),
+          //Fault Coding
+          .cell_addr(disturb_primitives[x*disturbW+dataAddrW-1:x*disturbW+0]),
+          .access_cnt(disturb_primitives[x*disturbW+dataAddrW+depthW-1:x*disturbW+dataAddrW]),
+          .pattern(disturb_primitives[(x+1)*disturbW-1:x*disturbW+dataAddrW+depthW]),
+          //Fault Injection
+          .watch_trigger(disturb_watch_triggers[x])
+        );
+      end
+    endgenerate
 
     // Processes
   //------------------------------- Sequential ------------------------------

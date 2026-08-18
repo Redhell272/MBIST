@@ -5,7 +5,7 @@ module testbench;
   localparam int fault_count = 256;
   localparam int random_seed = 42;
   localparam int disturb_count = 4;
-  localparam int static_count = 16;
+  localparam int couple_count = 16;
   localparam int watch_depth = 8;
   localparam int addrW = 8;
   localparam int dataW = 32;
@@ -33,7 +33,7 @@ module testbench;
       .fault_count(fault_count),
       .random_seed(random_seed),
       .disturb_count(disturb_count),
-      .static_count(static_count),
+      .couple_count(couple_count),
       .watch_depth(watch_depth),
       .addrW(addrW),
       .dataW(dataW)
@@ -102,11 +102,13 @@ module testbench;
     $fdisplay(log_fd | 32'h1, "================================================================");
     $fdisplay(log_fd | 32'h1, "[Fault Injection] %0d Faults Injected:", fault_count);
     for (int i = 0; i < fault_count; i++) begin
-      $fdisplay(log_fd | 32'h1, "  [%03d] addr=0x%02h bit=%02d primitive=0x%010h",
+      $fdisplay(log_fd | 32'h1, "  [%03d] addr=0x%02h bit=%02d primitive=0x%010h disturb=%032X",
         i,
         DUT.MEM.FaultDB.fault_addr_list[i][addrW-1:0],
         DUT.MEM.FaultDB.fault_addr_list[i] >> addrW,
-        DUT.MEM.FaultDB.fault_primitive_list[i]);
+        DUT.MEM.FaultDB.fault_primitive_list[i],
+        DUT.MEM.FaultDB.disturb_primitives_list[i]
+      );
     end
     $fdisplay(log_fd | 32'h1, "================================================================");
     $fdisplay(log_fd | 32'h1, "Starting Simulation...");
