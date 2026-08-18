@@ -143,7 +143,7 @@ module fault_model
     assign fault_bitmask = 1 << fault_dataAddr;
     assign fault_din = din[fault_dataAddr];
     
-    assign fault_access = (addr == fault_addr[addrW-1:0]) && !cs_n && !bwe_n[fault_dataAddr];
+    assign fault_access = (addr == fault_addr[addrW-1:0]) && !cs_n && !bwe_n[fault_dataAddr]; //byte write feature used as bit select
     assign fault_write = fault_access && !we_n; // && !bwe_n[fault_dataAddr];
     assign fault_read = fault_access && !re_n;
 

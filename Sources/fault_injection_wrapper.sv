@@ -22,6 +22,7 @@ module fault_injection_wrapper
     output logic [dataW-1:0] dout
   );
 
+`ifndef SYNTHESIS
     logic [dataW-1:0] data_in;
     logic [dataW-1:0] data_out;
 
@@ -82,6 +83,26 @@ module fault_injection_wrapper
       .f(fault_r),
       .o(dout)
     );
+
+`else  // synthesis: bare SRAM, no fault injection logic
+
+    sram #(
+      .addrW(addrW),
+      .dataW(dataW)
+    ) SRAM (
+      .clk(clk),
+      .cs_n(cs_n),
+      .addr(addr),
+      // Write
+      .we_n(we_n),
+      .bwe_n(bwe_n),
+      .din(din),
+      // Read
+      .re_n(re_n),
+      .dout(dout)
+    );
+
+`endif
 
 endmodule
 
