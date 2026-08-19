@@ -41,20 +41,20 @@ module faults_database
             do_advanced_faults[i] = {$random(seed), $random(seed)};
 
             for (ii = 0; ii < disturb_count; ii = ii + 1) begin
-              if (do_advanced_faults[i][0] && do_advanced_faults[i][4] && do_advanced_faults[i][ii+5]) begin
+              if (do_advanced_faults[i][0] && do_advanced_faults[i][1] && do_advanced_faults[i][6] && do_advanced_faults[i][ii+7]) begin
                 disturb_primitives_list[i][ii*disturbW +: disturbW] = {$random(seed), $random(seed)};
               end else begin
                 disturb_primitives_list[i][ii*disturbW +: disturbW] = '0;
-                do_advanced_faults[i][ii+6] = 1'b0;
+                do_advanced_faults[i][ii+8] = 1'b0;
               end
             end
 
-            if (do_advanced_faults[i][0]) begin
-              do_advanced_faults[i] = 28'h00FFFFF;
-            end else if (do_advanced_faults[i][1]) begin
-              do_advanced_faults[i] = 28'h1FFFFFF;
-            end else if (do_advanced_faults[i][2]) begin
-              do_advanced_faults[i] = 28'h7FFFFFF;
+            if (do_advanced_faults[i][0] || do_advanced_faults[i][1] || do_advanced_faults[i][2] || do_advanced_faults[i][3]) begin
+              do_advanced_faults[i] = 32'h000FFFFF;
+            end else if (do_advanced_faults[i][4]) begin
+              do_advanced_faults[i] = 32'h019FFFFF;
+            end else if (do_advanced_faults[i][5]) begin
+              do_advanced_faults[i] = 32'h1FBFFFFF;
             end else begin
               do_advanced_faults[i] = '1;
             end
@@ -239,7 +239,7 @@ module fault_model
           .dataAddrW(dataAddrW),
           .addrW(addrW),
           .dataW(dataW)
-        ) FD (
+        ) DW (
           .clk(clk),
           .nres(nres),
           //Memory Port
