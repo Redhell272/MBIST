@@ -19,7 +19,10 @@ module faults_database
     input  logic             re_n,
     //Fault Injection
     output logic [dataW-1:0] fault_w,
-    output logic [dataW-1:0] fault_r
+    output logic [dataW-1:0] fault_r,
+    //Fault Return
+    input  logic [dataW-1:0] mem_din,
+    input  logic [dataW-1:0] mem_dout
   );
 
     // Additional Parameter Gen
@@ -33,7 +36,8 @@ module faults_database
     logic [primitiveW-1:0] fault_primitive_list[fault_count-1:0];
     logic [dataAddrW-1:0] fault_addr_list[fault_count-1:0];
     logic [disturb_count*disturbW-1:0] disturb_primitives_list[fault_count-1:0];
-    integer i,ii;
+    logic [couple_count*(dataAddrW+2)-1:0] couple_primitives_list[fault_count-1:0];
+    integer i,ii,iii;
     integer seed;
     initial begin
         seed = random_seed;
@@ -45,7 +49,15 @@ module faults_database
                 disturb_primitives_list[i][ii*disturbW +: disturbW] = {$random(seed), $random(seed)};
               end else begin
                 disturb_primitives_list[i][ii*disturbW +: disturbW] = '0;
-                do_advanced_faults[i][ii+8] = 1'b0;
+              end
+            end
+
+            iii = 8+disturb_count;
+            for (ii = 0; ii < couple_count; ii = ii + 1) begin
+              if (do_advanced_faults[i][2] && do_advanced_faults[i][3] && do_advanced_faults[i][iii] && do_advanced_faults[i][ii+iii+1]) begin
+                couple_primitives_list[i][ii*(dataAddrW+2) +: (dataAddrW+2)] = {$random(seed), 1'b1};
+              end else begin
+                couple_primitives_list[i][ii*(dataAddrW+2) +: (dataAddrW+2)] = '0;
               end
             end
 
@@ -93,9 +105,13 @@ module faults_database
             .fault_primitive(fault_primitive_list[x]),
             .fault_addr(fault_addr_list[x]),
             .disturb_primitives(disturb_primitives_list[x]),
+            .couple_primitives(couple_primitives_list[x]),
             //Fault Injection
             .fault_w(fault_w_list[x]),
-            .fault_r(fault_r_list[x])
+            .fault_r(fault_r_list[x]),
+            //Fault Return
+            .mem_din(mem_din),
+            .mem_dout(mem_dout)
             );
         end
     endgenerate
@@ -140,9 +156,13 @@ module fault_model
     input  logic [primitiveW-1:0] fault_primitive,
     input  logic [dataAddrW-1:0] fault_addr,
     input  logic [disturb_count*disturbW-1:0] disturb_primitives,
+    input  logic [couple_count*(dataAddrW+2)-1:0] couple_primitives,
     //Fault Injection
     output logic [dataW-1:0] fault_w,
-    output logic [dataW-1:0] fault_r
+    output logic [dataW-1:0] fault_r,
+    //Fault Return
+    input  logic [dataW-1:0] mem_din,
+    input  logic [dataW-1:0] mem_dout
   );
 
     //Registers
@@ -179,6 +199,9 @@ module fault_model
     logic [disturb_count-1:0] disturb_watch_triggers;
     logic all_watch_trigger;
 
+    logic [couple_count-1:0] couple_track_triggers;
+    logic all_track_trigger;
+
     //Assigns
     assign fault_dataAddr = fault_addr[dataAddrW-1:addrW];
     assign fault_bitmask = 1 << fault_dataAddr;
@@ -192,7 +215,8 @@ module fault_model
     assign fault_action = fault_primitive[3:1];
 
     assign all_watch_trigger = fault_watch_trigger ? &disturb_watch_triggers : 1'b0;
-    assign fault_active = (cell_reg == fault_primitive[4]) && all_watch_trigger;
+    assign all_track_trigger = &couple_track_triggers;
+    assign fault_active = (cell_reg == fault_primitive[4]) && all_watch_trigger && all_track_trigger;
 
     assign fault_nonce = (fault_primitive[19:4] < 16'h0002) ? 16'h0002 : fault_primitive[19:4];
     assign fault_access_cnt = fault_primitive[depthW+19:20];
@@ -255,6 +279,33 @@ module fault_model
           .pattern(disturb_primitives[(x+1)*disturbW-1:x*disturbW+dataAddrW+depthW]),
           //Fault Injection
           .watch_trigger(disturb_watch_triggers[x])
+        );
+      end
+    endgenerate
+
+    genvar y;
+    generate
+      for (y = 0; y < couple_count; y = y + 1) begin
+        address_tracker #(
+          .couple_count(couple_count),
+          .dataAddrW(dataAddrW),
+          .addrW(addrW),
+          .dataW(dataW)
+        ) CT (
+          .clk(clk),
+          .nres(nres),
+          //Memory Port
+          .cs_n(cs_n),
+          .addr(addr),
+          .we_n(we_n),
+          .bwe_n(bwe_n),
+          .din(mem_din),
+          .re_n(re_n),
+          .dout(mem_dout),
+          //Fault Coding
+          .couple_primitive(couple_primitives[y*(dataAddrW+2)+dataAddrW+1:y*(dataAddrW+2)]),
+          //Fault Injection
+          .cell_track(couple_track_triggers[y])
         );
       end
     endgenerate
@@ -379,7 +430,6 @@ module address_watcher
   );
   
     //Registers
-
     reg [2*watch_depth-1:0] cell_access_watch;
     reg [depthW-1:0] nres_access_cnt;
 
@@ -435,6 +485,88 @@ module address_watcher
           if (nres_access_cnt != 0) begin
             nres_access_cnt <= nres_access_cnt - 1;
           end
+        end
+      end
+    end
+
+  //------------------------------ Combinational ----------------------------
+
+endmodule
+
+
+
+module address_tracker
+  #(
+    parameter int couple_count = 16, //Number of static aggressor addresses to be tracked
+    parameter int dataAddrW = 13,    //Address width including the bits to specify a single bit in the data word (addrW + log2(dataW))
+    parameter int addrW = 8,
+    parameter int dataW = 32
+  ) (
+    input  logic clk,
+    input  logic nres,
+    //Memory Port
+    input  logic             cs_n,
+    input  logic [addrW-1:0] addr,
+    input  logic             we_n,
+    input  logic [dataW-1:0] bwe_n,
+    input  logic [dataW-1:0] din,
+    input  logic             re_n,
+    input  logic [dataW-1:0] dout,
+    //Fault Coding
+    input  logic [dataAddrW+1:0] couple_primitive,
+    //Activation Output
+    output logic cell_track
+  );
+
+    //Registers
+    reg cell_read_d;
+    reg cell_reg;
+
+    //Wires
+    logic couple_en;
+    logic couple_value;
+    logic [dataAddrW-1:0] cell_addr;
+
+    logic [(dataAddrW-addrW)-1:0] cell_dataAddr;
+    logic [dataW-1:0] cell_bitmask;
+    logic cell_din;
+
+    logic cell_access;
+    logic cell_write;
+    logic cell_read;
+
+    //Assigns
+    assign couple_en = couple_primitive[0];
+    assign couple_value = couple_primitive[1];
+    assign cell_addr = couple_primitive[dataAddrW+1:2];
+
+    assign cell_dataAddr = cell_addr[dataAddrW-1:addrW];
+    assign cell_bitmask = 1 << cell_dataAddr;
+    assign cell_din = din[cell_dataAddr];
+    assign cell_dout = dout[cell_dataAddr];
+    
+    assign cell_access = (addr == cell_addr[addrW-1:0]) && !cs_n && !bwe_n[cell_dataAddr];
+    assign cell_write = cell_access && !we_n;
+    assign cell_read = cell_access && !re_n;
+
+    assign cell_track = couple_en ? (cell_reg == couple_value) : 1'b1;
+
+    //Instances
+
+    // Processes
+  //------------------------------- Sequential ------------------------------
+
+    always @(posedge clk or negedge nres) begin
+      if (nres == 0) begin
+        cell_read_d <= 1'b0;
+        cell_reg <= 1'b0;
+      end else begin
+        cell_read_d <= cell_read;
+
+        if (cell_write) begin
+          cell_reg <= cell_din;
+        end else if (cell_read_d && (cell_reg != cell_dout)) begin
+          cell_reg <= cell_dout;
         end
       end
     end

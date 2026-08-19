@@ -49,7 +49,10 @@ module fault_injection_wrapper
       .re_n(re_n),
       // Fault Injection
       .fault_w(fault_w),
-      .fault_r(fault_r)
+      .fault_r(fault_r),
+      // Fault Return
+      .mem_din(data_in),
+      .mem_dout(dout)
     );
 
     fault_insert #(
