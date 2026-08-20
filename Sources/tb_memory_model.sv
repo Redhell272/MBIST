@@ -2,13 +2,13 @@
 //Test Logic Switch
 module testbench;
 
-  localparam int fault_count = 256;
+  localparam int fault_count = 512;
   localparam int random_seed = 42;
-  localparam int disturb_count = 4;
-  localparam int couple_count = 16;
-  localparam int watch_depth = 8;
+  localparam int disturb_count = 2;
+  localparam int couple_count = 4;
+  localparam int watch_depth = 2;
   localparam int addrW = 8;
-  localparam int dataW = 32;
+  localparam int dataW = 64;
 
   reg clk=1'b0;
   reg nres=1'b0;
@@ -72,11 +72,11 @@ module testbench;
     #20 nres=1;
 
     #20 cs_n=0;
-    #10 addr=0; we_n=0; bwe_n='0; din=32'h00000000;
-    #10 addr=1; we_n=0; bwe_n='0; din=32'h01010101;
-    #10 addr=2; we_n=0; bwe_n='0; din=32'h02020202;
-    #10 addr=3; we_n=0; bwe_n='0; din=32'h03030303;
-    #10 addr=0; we_n=1; bwe_n='1; din=32'h00000000;
+    #10 addr=0; we_n=0; bwe_n='0; din=64'h0000000000000000;
+    #10 addr=1; we_n=0; bwe_n='0; din=64'h0101010101010101;
+    #10 addr=2; we_n=0; bwe_n='0; din=64'h0202020202020202;
+    #10 addr=3; we_n=0; bwe_n='0; din=64'h0303030303030303;
+    #10 addr=0; we_n=1; bwe_n='1; din='0;
     #10 addr=0; re_n=0;
     #10 addr=1; re_n=0;
     #10 addr=2; re_n=0;

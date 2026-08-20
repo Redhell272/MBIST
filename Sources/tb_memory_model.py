@@ -4,10 +4,16 @@ import sys
 filepath = "testbench.log"
 results_filepath = "testbench.results"
 
-disturb_n = 4
-couple_n = 16
+disturb_n = 2
+couple_n = 4
+depthW = 1
+addrW = 8
+dataW = 6
 
 linebreak = "================================================================================================================================"
+
+def bitmask(w):
+    return (1 << w) - 1
 
 class Tee:
     def __init__(self, *files):
@@ -77,9 +83,8 @@ for i in range(n_faults):
 
     prim_type = (prim >> 1) & 0x07
     prim_text = fault_type_map(prim_type) + f'({((prim >> 4) & 0x01)})'
-    prim_watch_cnt = (prim >> 20) & 0x07
-    pattern_mask = ~(0x0FFFF << (prim_watch_cnt*2))
-    prim_watch_pattern = (prim >> 23) & pattern_mask
+    prim_watch_cnt = (prim >> 20) & bitmask(depthW)
+    prim_watch_pattern = (prim >> (20+depthW)) & bitmask(prim_watch_cnt*2)
 
     if prim_type == 0b001:  # DRF
         prim_text += f'(t={((prim >> 4) & 0x0FFFF):04X})'
@@ -96,11 +101,11 @@ for i in range(n_faults):
     prim_text += f'|'
 
     for j in range(disturb_n):
-        disturb_prim = (disturb >> (j*32)) & 0x0FFFFFFFF
-        disturb_addr = disturb_prim & 0x0FF
-        disturb_bit = (disturb_prim >> 8) & 0x1F
-        disturb_count = (disturb_prim >> 13) & 0x07
-        disturb_pattern = (disturb_prim >> 16) & 0x0FFFF
+        disturb_prim = (disturb >> (j*(addrW+dataW+depthW+2**(depthW+1)))) & bitmask(addrW+dataW+depthW+2**(depthW+1))
+        disturb_addr = disturb_prim & bitmask(addrW)
+        disturb_bit = (disturb_prim >> addrW) & bitmask(dataW)
+        disturb_count = (disturb_prim >> (addrW+dataW)) & bitmask(depthW)
+        disturb_pattern = (disturb_prim >> (addrW+dataW+depthW)) & bitmask(2**(depthW+1))
         
         if disturb_count != 0:
             prim_text += f'(d={disturb_addr:02X}:{disturb_bit:02d})'
@@ -110,11 +115,11 @@ for i in range(n_faults):
     prim_text += f'|'
 
     for j in range(couple_n):
-        couple_prim = (couple >> (j*15)) & 0x07FFF
+        couple_prim = (couple >> (j*(2+addrW+dataW))) & bitmask(2+addrW+dataW)
         couple_en = couple_prim & 0x01
         couple_value = (couple_prim >> 1) & 0x01
-        couple_addr = (couple_prim >> 2) & 0x0FF
-        couple_bit = (couple_prim >> 10) & 0x1F
+        couple_addr = (couple_prim >> 2) & bitmask(addrW)
+        couple_bit = (couple_prim >> (2+addrW)) & bitmask(dataW)
         
         if couple_en != 0:
             prim_text += f'(c={couple_addr:02X}:{couple_bit:02d}|{couple_value:01d})'
