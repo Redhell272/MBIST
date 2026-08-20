@@ -4,6 +4,9 @@ import sys
 filepath = "testbench.log"
 results_filepath = "testbench.results"
 
+disturb_n = 4
+couple_n = 16
+
 linebreak = "================================================================================================================================"
 
 class Tee:
@@ -70,6 +73,7 @@ for i in range(n_faults):
 
     prim = int(text_array[2 + i][3].split("=")[1], 16)
     disturb = int(text_array[2 + i][4].split("=")[1], 16)
+    couple = int(text_array[2 + i][5].split("=")[1], 16)
 
     prim_type = (prim >> 1) & 0x07
     prim_text = fault_type_map(prim_type) + f'({((prim >> 4) & 0x01)})'
@@ -82,12 +86,16 @@ for i in range(n_faults):
     else:
         prim_text += f'        '
 
+    prim_text += f'|'
+
     if prim_watch_cnt != 0:
         prim_text += f'(w={prim_watch_cnt:01d}:{prim_watch_pattern:04X})'
     else:
         prim_text += f'          '
 
-    for j in range(4):
+    prim_text += f'|'
+
+    for j in range(disturb_n):
         disturb_prim = (disturb >> (j*32)) & 0x0FFFFFFFF
         disturb_addr = disturb_prim & 0x0FF
         disturb_bit = (disturb_prim >> 8) & 0x1F
@@ -95,7 +103,21 @@ for i in range(n_faults):
         disturb_pattern = (disturb_prim >> 16) & 0x0FFFF
         
         if disturb_count != 0:
-            prim_text += f'(d=0x{disturb_addr:02X}:{disturb_bit:02d})'
+            prim_text += f'(d={disturb_addr:02X}:{disturb_bit:02d})'
+        else:
+            prim_text += f'         '
+
+    prim_text += f'|'
+
+    for j in range(couple_n):
+        couple_prim = (couple >> (j*15)) & 0x07FFF
+        couple_en = couple_prim & 0x01
+        couple_value = (couple_prim >> 1) & 0x01
+        couple_addr = (couple_prim >> 2) & 0x0FF
+        couple_bit = (couple_prim >> 10) & 0x1F
+        
+        if couple_en != 0:
+            prim_text += f'(c={couple_addr:02X}:{couple_bit:02d}|{couple_value:01d})'
         else:
             prim_text += f'           '
 
@@ -128,28 +150,38 @@ for i, fault in enumerate(faults):
     reads = ""
     for read in fault[1]:
         reads += f'[{state_map(read[0])}:r{read[2]}]'
-    print(f'[{i:03d}] 0x{fault[0][0]:02X}:{fault[0][1]:02d} prim={primitives[i][1]} | Failing Reads={reads} n={n}')
+    print(f'[{i:03d}] 0x{fault[0][0]:02X}:{fault[0][1]:02d} |n:{n if n > 0 else " "}| prim={primitives[i][1]} | Failing Reads={reads} n={n}')
 
     if n > 0:
         n_found += 1
+
+print(linebreak)
 print(f'\nTotal Faults Detected by MBIST: {n_found} / {n_faults} = {n_found/n_faults*100:.2f}%\n')
 
 
+
 # Analyze undetected faults by type
+detected_faults = [[],[],[],[],[],[],[],[]]
 undetected_faults = [[],[],[],[],[],[],[],[]]
 for i, fault in enumerate(faults):
     if len(fault[1]) == 0:
         undetected_faults[primitives[i][0]].append(i)
+    else:
+        detected_faults[primitives[i][0]].append(i)
 
 print(linebreak)
-print(f'\nUndetected Faults by Type:\n')
-for i, undetected in enumerate(undetected_faults):
+print(f'\nDetected/Undetected Faults by Type:\n')
+for i in range(8):
+    detected = detected_faults[i]
+    undetected = undetected_faults[i]
+    if len(detected) != 0:
+        print(f'Detected Faults of type{fault_type_map(i)}: (Fault Success Rate = {(len(detected)/prim_type_counts[i])*100:.2f}%)')
+        for j in detected:
+            print(f'  [{j:03d}] 0x{faults[j][0][0]:02X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
     if len(undetected) != 0:
-        print(f'Undetected Faults of type{fault_type_map(i)}: (Fault Success Rate = {(1 - len(undetected)/prim_type_counts[i])*100:.2f}%)')
+        print(f'Undetected Faults of type{fault_type_map(i)}:')
         for j in undetected:
             print(f'  [{j:03d}] 0x{faults[j][0][0]:02X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
-    else:
-        print(f'No Undetected Faults of type{fault_type_map(i)} (Fault Success Rate = 100.00%)')
     print()
 
 # Analyze linked faults

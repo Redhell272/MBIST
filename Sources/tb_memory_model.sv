@@ -102,7 +102,7 @@ module testbench;
     $fdisplay(log_fd | 32'h1, "================================================================");
     $fdisplay(log_fd | 32'h1, "[Fault Injection] %0d Faults Injected:", fault_count);
     for (int i = 0; i < fault_count; i++) begin
-      $fdisplay(log_fd | 32'h1, "  [%03d] addr=0x%02h bit=%02d primitive=0x%010h disturb=%032X couple=%064X",
+      $fdisplay(log_fd | 32'h1, "  [%03d] addr=0x%02h bit=%02d primitive=0x%010h disturb=0x%032X couple=0x%064X",
         i,
         DUT.MEM.FaultDB.fault_addr_list[i][addrW-1:0],
         DUT.MEM.FaultDB.fault_addr_list[i] >> addrW,
