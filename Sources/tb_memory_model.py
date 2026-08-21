@@ -7,8 +7,8 @@ results_filepath = "testbench.results"
 disturb_n = 2
 couple_n = 4
 depthW = 1
-addrW = 8
-dataW = 6
+addrW = 10
+dataW = 5
 
 linebreak = "================================================================================================================================"
 
@@ -108,9 +108,18 @@ for i in range(n_faults):
         disturb_pattern = (disturb_prim >> (addrW+dataW+depthW)) & bitmask(2**(depthW+1))
         
         if disturb_count != 0:
-            prim_text += f'(d={disturb_addr:02X}:{disturb_bit:02d})'
+            prim_text += f'(d={disturb_addr:03X}:{disturb_bit:02d}|'
+            for j in range(disturb_count):
+                disturb_code = (disturb_pattern >> (j*2)) & 0x03
+                if disturb_code == 3:
+                    prim_text += f'W1'
+                elif disturb_code == 2:
+                    prim_text += f'W0'
+                else:
+                    prim_text += f'RX'
+            prim_text += f')'
         else:
-            prim_text += f'         '
+            prim_text += f'             '
 
     prim_text += f'|'
 
@@ -122,9 +131,9 @@ for i in range(n_faults):
         couple_bit = (couple_prim >> (2+addrW)) & bitmask(dataW)
         
         if couple_en != 0:
-            prim_text += f'(c={couple_addr:02X}:{couple_bit:02d}|{couple_value:01d})'
+            prim_text += f'(c={couple_addr:03X}:{couple_bit:02d}|{couple_value:01d})'
         else:
-            prim_text += f'           '
+            prim_text += f'            '
 
     primitives.append([prim_type, prim_text])
     prim_type_counts[prim_type] += 1
@@ -155,7 +164,7 @@ for i, fault in enumerate(faults):
     reads = ""
     for read in fault[1]:
         reads += f'[{state_map(read[0])}:r{read[2]}]'
-    print(f'[{i:03d}] 0x{fault[0][0]:02X}:{fault[0][1]:02d} |n:{n if n > 0 else " "}| prim={primitives[i][1]} | Failing Reads={reads} n={n}')
+    print(f'[{i:03d}] 0x{fault[0][0]:03X}:{fault[0][1]:02d} |n:{n if n > 0 else " "}| prim={primitives[i][1]} | Failing Reads={reads} n={n}')
 
     if n > 0:
         n_found += 1
@@ -179,14 +188,13 @@ print(f'\nDetected/Undetected Faults by Type:\n')
 for i in range(8):
     detected = detected_faults[i]
     undetected = undetected_faults[i]
-    if len(detected) != 0:
-        print(f'Detected Faults of type{fault_type_map(i)}: (Fault Success Rate = {(len(detected)/prim_type_counts[i])*100:.2f}%)')
-        for j in detected:
-            print(f'  [{j:03d}] 0x{faults[j][0][0]:02X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
+    print(f'Detected Faults of type{fault_type_map(i)}: (Fault Success Rate = {(len(detected)/prim_type_counts[i])*100:.2f}%)')
+    for j in detected:
+        print(f'  [{j:03d}] 0x{faults[j][0][0]:03X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
     if len(undetected) != 0:
         print(f'Undetected Faults of type{fault_type_map(i)}:')
         for j in undetected:
-            print(f'  [{j:03d}] 0x{faults[j][0][0]:02X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
+            print(f'  [{j:03d}] 0x{faults[j][0][0]:03X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
     print()
 
 # Analyze linked faults
@@ -212,7 +220,7 @@ if len(linked_faults) != 0:
     print(linebreak)
     print(f'\nLinked Faults:\n')
     for indices in linked_faults:
-        print(f'addr=0x{faults[indices[0]][0][0]:02X} bit={faults[indices[0]][0][1]:02d} has linked faults {indices} | Primitives {[primitives[i][1].replace(" ", "") for i in indices]}')
+        print(f'addr=0x{faults[indices[0]][0][0]:03X} bit={faults[indices[0]][0][1]:02d} has linked faults {indices} | Primitives {[primitives[i][1].replace(" ", "") for i in indices]}')
     print()
 
 print(linebreak)

@@ -62,14 +62,18 @@ module faults_database
             end
 
             if (do_advanced_faults[i][0] || do_advanced_faults[i][1] || do_advanced_faults[i][2] || do_advanced_faults[i][3]) begin
-              do_advanced_faults[i] = 32'h000FFFFF;
+              do_advanced_faults[i][primitiveW-1:20] = '0;
             end else if (do_advanced_faults[i][4]) begin
-              do_advanced_faults[i] = 32'h019FFFFF;
+              do_advanced_faults[i][depthW+19:20] = 8'h01;
+              do_advanced_faults[i][primitiveW-1:depthW+20] = 32'h03;
             end else if (do_advanced_faults[i][5]) begin
-              do_advanced_faults[i] = 32'h1FBFFFFF;
+              do_advanced_faults[i][depthW+19:20] = 8'h03;
+              do_advanced_faults[i][primitiveW-1:depthW+20] = 32'h3F;
             end else begin
-              do_advanced_faults[i] = '1;
+              do_advanced_faults[i][primitiveW-1:20] = '1;
             end
+            do_advanced_faults[i][19:0] = '1;
+            
             fault_primitive_list[i] = {$random(seed), $random(seed)} & do_advanced_faults[i];
             fault_addr_list[i] = $random(seed);
         end
@@ -287,7 +291,6 @@ module fault_model
     generate
       for (y = 0; y < couple_count; y = y + 1) begin
         address_tracker #(
-          .couple_count(couple_count),
           .dataAddrW(dataAddrW),
           .addrW(addrW),
           .dataW(dataW)
@@ -359,7 +362,7 @@ module fault_model
 
         3'b000: begin // Stuck At Fault
           overwrite_w = (fault_din != cell_reg) && fault_active;
-          overwrite_r = 1'b0;
+          overwrite_r = (cell_reg != fault_primitive[4]) && all_watch_trigger && all_track_trigger;
         end
 
         3'b001: begin // Data Retention Fault
@@ -435,7 +438,6 @@ module address_watcher
 
     //Wires
     logic [(dataAddrW-addrW)-1:0] cell_dataAddr;
-    logic [dataW-1:0] cell_bitmask;
     logic cell_din;
 
     logic cell_access;
@@ -449,7 +451,6 @@ module address_watcher
 
     //Assigns
     assign cell_dataAddr = cell_addr[dataAddrW-1:addrW];
-    assign cell_bitmask = 1 << cell_dataAddr;
     assign cell_din = din[cell_dataAddr];
     
     assign cell_access = (addr == cell_addr[addrW-1:0]) && !cs_n && !bwe_n[cell_dataAddr]; //byte write feature used as bit select
@@ -465,7 +466,7 @@ module address_watcher
     endgenerate
 
     assign access_bitmask = ~('1 << (access_cnt*2));
-    assign access_match = (nres_access_cnt == 0) ? (cell_access_watch & access_bitmask) == (pattern & access_bitmask) : 1'b0;
+    assign access_match = (nres_access_cnt == 0) ? (cell_access_watch & access_bitmask) == (access_pattern & access_bitmask) : 1'b0;
     assign watch_trigger = (access_cnt > 0) ? access_match : 1'b1;
 
     //Instances
@@ -497,7 +498,6 @@ endmodule
 
 module address_tracker
   #(
-    parameter int couple_count = 16, //Number of static aggressor addresses to be tracked
     parameter int dataAddrW = 13,    //Address width including the bits to specify a single bit in the data word (addrW + log2(dataW))
     parameter int addrW = 8,
     parameter int dataW = 32
@@ -528,8 +528,8 @@ module address_tracker
     logic [dataAddrW-1:0] cell_addr;
 
     logic [(dataAddrW-addrW)-1:0] cell_dataAddr;
-    logic [dataW-1:0] cell_bitmask;
     logic cell_din;
+    logic cell_dout;
 
     logic cell_access;
     logic cell_write;
@@ -541,7 +541,6 @@ module address_tracker
     assign cell_addr = couple_primitive[dataAddrW+1:2];
 
     assign cell_dataAddr = cell_addr[dataAddrW-1:addrW];
-    assign cell_bitmask = 1 << cell_dataAddr;
     assign cell_din = din[cell_dataAddr];
     assign cell_dout = dout[cell_dataAddr];
     
