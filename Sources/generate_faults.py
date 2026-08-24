@@ -15,8 +15,8 @@ def _param(name):
         raise ValueError(f"Parameter '{name}' not found in tb_memory_model.sv")
     return int(m.group(1))
 
-fault_count   = _param("fault_count")
 random_seed   = _param("random_seed")
+fault_count   = _param("fault_count")
 disturb_count = _param("disturb_count")
 couple_count  = _param("couple_count")
 watch_depth   = _param("watch_depth")

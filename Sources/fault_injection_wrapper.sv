@@ -1,13 +1,14 @@
 module fault_injection_wrapper
   #(
+    parameter int base_index = 0,    //GOTO: /faults_database
     parameter int fault_count = 16,  //GOTO: /faults_database
-    parameter int random_seed = 42,  //GOTO: /faults_database
     parameter int disturb_count = 4, //GOTO: /faults_database/fault_model
     parameter int couple_count = 16, //GOTO: /faults_database/fault_model
     parameter int watch_depth = 8,   //GOTO: /faults_database/fault_model
     parameter int addrW = 8,
     parameter int dataW = 32
   ) (
+    input  integer log_fd,
     input  logic clk,
     input  logic nres,
     //Memory Port
@@ -30,14 +31,15 @@ module fault_injection_wrapper
     logic [dataW-1:0] fault_r;
 
     faults_database #(
+      .base_index(base_index),
       .fault_count(fault_count),
-      .random_seed(random_seed),
       .disturb_count(disturb_count),
       .couple_count(couple_count),
       .watch_depth(watch_depth),
       .addrW(addrW),
       .dataW(dataW)
     ) FaultDB (
+      .log_fd(log_fd),
       .clk(clk),
       .nres(nres),
       //Memory Port

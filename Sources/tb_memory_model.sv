@@ -2,13 +2,17 @@
 //Test Logic Switch
 module testbench;
 
-  localparam int fault_count = 32;
   localparam int random_seed = 42;
+  localparam int parallel_mems = 2;
+  localparam int mem_sections = 8;
+  localparam int fault_count = 64;
   localparam int disturb_count = 2;
   localparam int couple_count = 4;
   localparam int watch_depth = 3;
   localparam int addrW = 10;
-  localparam int dataW = 32;
+  localparam int dataW = 64;
+
+  localparam int mem_addrW = addrW - $clog2(mem_sections);
 
   reg clk=1'b0;
   reg nres=1'b0;
@@ -30,14 +34,17 @@ module testbench;
   
   // Instantiate Units Under Test
   memory_model #(
+      .base_index(0),
+      .parallel_mems(parallel_mems),
+      .mem_sections(mem_sections),
       .fault_count(fault_count),
-      .random_seed(random_seed),
       .disturb_count(disturb_count),
       .couple_count(couple_count),
       .watch_depth(watch_depth),
       .addrW(addrW),
       .dataW(dataW)
-    ) DUT (
+    ) MEM0 (
+    .log_fd(log_fd),
     .clk(clk),
     .nres(nres),
     //Memory Port
@@ -65,17 +72,17 @@ module testbench;
   initial begin
     // Dump variables for editing
     $dumpfile("testbench.vcd");
-    $dumpvars(4); //4 for just the baseline until FaultDB, 6 to include fault models, 0 for everything
+    $dumpvars(6); //6 for just the baseline until FaultDB, 8 to include fault models, 0 for everything
     log_fd = $fopen("testbench.log");
     
     //Testbench Inputs
     #20 nres=1;
 
     #20 cs_n=0;
-    #10 addr=0; we_n=0; bwe_n='0; din=32'h00000000;
-    #10 addr=1; we_n=0; bwe_n='0; din=32'h01010101;
-    #10 addr=2; we_n=0; bwe_n='0; din=32'h02020202;
-    #10 addr=3; we_n=0; bwe_n='0; din=32'h03030303;
+    #10 addr=0; we_n=0; bwe_n='0; din=64'h0000000000000000;
+    #10 addr=1; we_n=0; bwe_n='0; din=64'h0101010101010101;
+    #10 addr=2; we_n=0; bwe_n='0; din=64'h0202020202020202;
+    #10 addr=3; we_n=0; bwe_n='0; din=64'h0303030303030303;
     #10 addr=0; we_n=1; bwe_n='1; din='0;
     #10 addr=0; re_n=0;
     #10 addr=1; re_n=0;
@@ -85,7 +92,7 @@ module testbench;
     #20 cs_n=1;
 
     #20 mbist_en=1;
-    wait(DUT.MBIST.mbist_state == 5'b00001); // wait for MBIST END state
+    wait(MEM0.MBIST.mbist_state == 5'b00001); // wait for MBIST END state
     #20 mbist_en=0;
 
     #10000;
@@ -101,25 +108,19 @@ module testbench;
     @(posedge nres);
     $fdisplay(log_fd | 32'h1, "================================================================");
     $fdisplay(log_fd | 32'h1, "[Fault Injection] %0d Faults Injected:", fault_count);
-    for (int i = 0; i < fault_count; i++) begin
-      $fdisplay(log_fd | 32'h1, "  [%03d] addr=0x%03h bit=%02d primitive=0x%010h disturb=0x%032X couple=0x%064X",
-        i,
-        DUT.MEM.FaultDB.fault_addr_list[i][addrW-1:0],
-        DUT.MEM.FaultDB.fault_addr_list[i] >> addrW,
-        DUT.MEM.FaultDB.fault_primitive_list[i],
-        DUT.MEM.FaultDB.disturb_primitives_list[i],
-        DUT.MEM.FaultDB.couple_primitives_list[i]
-      );
-    end
+    #2;
     $fdisplay(log_fd | 32'h1, "================================================================");
     $fdisplay(log_fd | 32'h1, "Starting Simulation...");
     $fdisplay(log_fd | 32'h1, "================================================================");
+    $fflush(log_fd);
   end
-  
+
   always @(posedge mbist_fault) begin
     #5;
-    if (mbist_fault == 1'b1)
+    if (mbist_fault == 1'b1) begin
       $fdisplay(log_fd | 32'h1, "[MBIST] t=%t | Fault at addr=0x%03h data=0x%08h state=0x%02h dout=0x%08h expc=0x%08h", $time, mbist_fault_addr, mbist_fault_data, mbist_fault_state, mbist_fault_dout, mbist_fault_expc);
+      $fflush(log_fd);
+    end
   end
 
   //Clock

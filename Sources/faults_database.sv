@@ -1,13 +1,14 @@
 module faults_database
   #(
+    parameter int base_index = 0,    //Base index for labelling and offsets
     parameter int fault_count = 16,  //Number of faults in database
-    parameter int random_seed = 42,  //Seed for random number generation
     parameter int disturb_count = 4, //GOTO: fault_model
     parameter int couple_count = 16, //GOTO: fault_model
     parameter int watch_depth = 8,   //GOTO: address_watcher
     parameter int addrW = 8,
     parameter int dataW = 32
   ) (
+    input  integer log_fd,
     input  logic clk,
     input  logic nres,
     //Memory Port
@@ -26,10 +27,11 @@ module faults_database
   );
 
     // Additional Parameter Gen
-    localparam int depthW = $clog2(watch_depth);         //GOTO: address_watcher
-    localparam int primitiveW = 2*watch_depth+depthW+20; //GOTO: fault_model
-    localparam int dataAddrW = addrW + $clog2(dataW);    //GOTO: fault_model
-    localparam int disturbW = primitiveW-20+dataAddrW;   //GOTO: fault_model
+    localparam int depthW = $clog2(watch_depth);              //GOTO: address_watcher
+    localparam int primitiveW = 2*watch_depth+depthW+20;      //GOTO: fault_model
+    localparam int dataAddrW = addrW + $clog2(dataW);         //GOTO: fault_model
+    localparam int disturbW = primitiveW-20+dataAddrW;        //GOTO: fault_model
+    localparam int mem_end = (base_index + 1) * fault_count;  //Necessary depth of .mem files
 
     // Random Values for Fault Coding
     logic [dataAddrW-1:0] fault_addr_list[fault_count-1:0];
@@ -37,13 +39,40 @@ module faults_database
     logic [disturb_count*disturbW-1:0] disturb_primitives_list[fault_count-1:0];
     logic [couple_count*(dataAddrW+2)-1:0] couple_primitives_list[fault_count-1:0];
 
+    // Temp arrays sized to reach this instance's memory slice in .mem files
+    logic [dataAddrW-1:0]                  tmp_fa[mem_end];
+    logic [primitiveW-1:0]                 tmp_fp[mem_end];
+    logic [disturb_count*disturbW-1:0]     tmp_dp[mem_end];
+    logic [couple_count*(dataAddrW+2)-1:0] tmp_cp[mem_end];
+
     string mem_dir;
     initial begin
         if (!$value$plusargs("mem_dir=%s", mem_dir)) mem_dir = ".";
-        $readmemh({mem_dir, "/fault_addr.mem"},         fault_addr_list,         0, fault_count-1);
-        $readmemh({mem_dir, "/fault_primitives.mem"},   fault_primitive_list,    0, fault_count-1);
-        $readmemh({mem_dir, "/disturb_primitives.mem"}, disturb_primitives_list, 0, fault_count-1);
-        $readmemh({mem_dir, "/couple_primitives.mem"},  couple_primitives_list,  0, fault_count-1);
+        $readmemh({mem_dir, "/fault_addr.mem"},         tmp_fa);
+        $readmemh({mem_dir, "/fault_primitives.mem"},   tmp_fp);
+        $readmemh({mem_dir, "/disturb_primitives.mem"}, tmp_dp);
+        $readmemh({mem_dir, "/couple_primitives.mem"},  tmp_cp);
+
+        for (int i = 0; i < fault_count; i++) begin
+            fault_addr_list[i]         = tmp_fa[base_index*fault_count + i];
+            fault_primitive_list[i]    = tmp_fp[base_index*fault_count + i];
+            disturb_primitives_list[i] = tmp_dp[base_index*fault_count + i];
+            couple_primitives_list[i]  = tmp_cp[base_index*fault_count + i];
+        end
+    end
+
+    initial begin
+        @(posedge nres);
+        #1;
+        for (int k = 0; k < fault_count; k++) begin
+            $fdisplay(log_fd | 32'h1, "  [%03d] addr=0x%04h bit=%02d primitive=0x%010h disturb=0x%032X couple=0x%064X",
+                base_index*fault_count+k,
+                fault_addr_list[k][addrW-1:0] + base_index << addrW,
+                fault_addr_list[k] >> addrW,
+                fault_primitive_list[k],
+                disturb_primitives_list[k],
+                couple_primitives_list[k]);
+        end
     end
 
     // Fault Model Instances
