@@ -32,15 +32,39 @@ disturbW   = primitiveW - 20 + dataAddrW
 R = random.Random(random_seed)
 base = [(R.randint(0x00, 0xFF)) for _ in range(fault_count)]
 
-
-
 def fault(c, i):
+    p_rand = R.randint(0, 2**primitiveW - 1)
+    d_rand = R.randint(0, 2**(disturb_count*disturbW) - 1)
+    c_rand = R.randint(0, 2**(couple_count*(dataAddrW+2)) - 1)
+
+
+
+    match base[i] % 4:
+        case 0:
+            p_val = p_rand
+            d_val = d_rand
+            c_val = c_rand
+        case 1:
+            p_val = p_rand
+            d_val = 0x00
+            c_val = c_rand
+        case 2:
+            p_val = p_rand
+            d_val = d_rand
+            c_val = 0x00
+        case _:
+            p_val = p_rand
+            d_val = 0x00
+            c_val = 0x00
+
+
+
     if c == "d":
-        return R.randint(0, 2**(disturb_count*disturbW) - 1)
+        return d_val
     elif c == "c":
-        return R.randint(0, 2**(couple_count*(dataAddrW+2)) - 1)
+        return c_val
     else:
-        return R.randint(0, 2**primitiveW - 1)
+        return p_val
 
 
 
