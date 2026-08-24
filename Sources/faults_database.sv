@@ -37,11 +37,13 @@ module faults_database
     logic [disturb_count*disturbW-1:0] disturb_primitives_list[fault_count-1:0];
     logic [couple_count*(dataAddrW+2)-1:0] couple_primitives_list[fault_count-1:0];
 
+    string mem_dir;
     initial begin
-        $readmemh("fault_addr.mem",         fault_addr_list);
-        $readmemh("fault_primitives.mem",   fault_primitive_list);
-        $readmemh("disturb_primitives.mem", disturb_primitives_list);
-        $readmemh("couple_primitives.mem",  couple_primitives_list);
+        if (!$value$plusargs("mem_dir=%s", mem_dir)) mem_dir = ".";
+        $readmemh({mem_dir, "/fault_addr.mem"},         fault_addr_list,         0, fault_count-1);
+        $readmemh({mem_dir, "/fault_primitives.mem"},   fault_primitive_list,    0, fault_count-1);
+        $readmemh({mem_dir, "/disturb_primitives.mem"}, disturb_primitives_list, 0, fault_count-1);
+        $readmemh({mem_dir, "/couple_primitives.mem"},  couple_primitives_list,  0, fault_count-1);
     end
 
     // Fault Model Instances

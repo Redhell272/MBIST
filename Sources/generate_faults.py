@@ -30,40 +30,40 @@ dataAddrW  = addrW + math.ceil(math.log2(dataW))
 disturbW   = primitiveW - 20 + dataAddrW
 
 R = random.Random(random_seed)
-baseline = R.randint()
+base = [(R.randint(0x00, 0xFF)) for _ in range(fault_count)]
 
-def compute_addr(i):
-    return R.randint(0, 2**dataAddrW - 1)
 
-def compute_primitive(i):
-    return R.randint(0, 2**primitiveW - 1)
 
-def compute_disturb(i):
-    return R.randint(0, 2**(disturb_count * disturbW) - 1)
+def fault(c, i):
+    if c == "d":
+        return R.randint(0, 2**(disturb_count*disturbW) - 1)
+    elif c == "c":
+        return R.randint(0, 2**(couple_count*(dataAddrW+2)) - 1)
+    else:
+        return R.randint(0, 2**primitiveW - 1)
 
-def compute_couple(i):
-    return R.randint(0, 2**(couple_count * (dataAddrW + 2)) - 1)
+
 
 with open(os.path.join(os.path.dirname(__file__), "fault_addr.mem"), "w") as f:
     for i in range(fault_count):
-        value = compute_addr(i)
+        value = R.randint(0, 2**dataAddrW - 1)
         hex_digits = (dataAddrW + 3) // 4
         f.write(f"{value:0{hex_digits}X}\n")
 
 with open(os.path.join(os.path.dirname(__file__), "fault_primitives.mem"), "w") as f:
     for i in range(fault_count):
-        value = compute_primitive(i)
+        value = fault("p", i)
         hex_digits = (primitiveW + 3) // 4
         f.write(f"{value:0{hex_digits}X}\n")
 
 with open(os.path.join(os.path.dirname(__file__), "disturb_primitives.mem"), "w") as f:
     for i in range(fault_count):
-        value = compute_disturb(i)
+        value = fault("d", i)
         hex_digits = (disturb_count*disturbW + 3) // 4
         f.write(f"{value:0{hex_digits}X}\n")
 
 with open(os.path.join(os.path.dirname(__file__), "couple_primitives.mem"), "w") as f:
     for i in range(fault_count):
-        value = compute_couple(i)
+        value = fault("c", i)
         hex_digits = (couple_count*(dataAddrW+2) + 3) // 4
         f.write(f"{value:0{hex_digits}X}\n")

@@ -1,0 +1,5 @@
+{
+  "veriflow.simulator": "custom",
+  "veriflow.simulatorCompileCmd": "iverilog -g2012 -o \"{output}\" {files}",
+  "veriflow.simulatorRunCmd": "vvp \"{output}\" +mem_dir=MBIST/Sources"
+}
