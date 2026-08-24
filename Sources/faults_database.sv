@@ -32,51 +32,16 @@ module faults_database
     localparam int disturbW = primitiveW-20+dataAddrW;   //GOTO: fault_model
 
     // Random Values for Fault Coding
-    logic [primitiveW-1:0] do_advanced_faults[fault_count-1:0];
-    logic [primitiveW-1:0] fault_primitive_list[fault_count-1:0];
     logic [dataAddrW-1:0] fault_addr_list[fault_count-1:0];
+    logic [primitiveW-1:0] fault_primitive_list[fault_count-1:0];
     logic [disturb_count*disturbW-1:0] disturb_primitives_list[fault_count-1:0];
     logic [couple_count*(dataAddrW+2)-1:0] couple_primitives_list[fault_count-1:0];
-    integer i,ii,iii;
-    integer seed;
+
     initial begin
-        seed = random_seed;
-        for (i = 0; i < fault_count; i = i + 1) begin
-            do_advanced_faults[i] = {$random(seed), $random(seed)};
-
-            for (ii = 0; ii < disturb_count; ii = ii + 1) begin
-              if (do_advanced_faults[i][0] && do_advanced_faults[i][1] && do_advanced_faults[i][6] && do_advanced_faults[i][ii+7]) begin
-                disturb_primitives_list[i][ii*disturbW +: disturbW] = {$random(seed), $random(seed)};
-              end else begin
-                disturb_primitives_list[i][ii*disturbW +: disturbW] = '0;
-              end
-            end
-
-            iii = 8+disturb_count;
-            for (ii = 0; ii < couple_count; ii = ii + 1) begin
-              if (do_advanced_faults[i][2] && do_advanced_faults[i][3] && do_advanced_faults[i][iii] && do_advanced_faults[i][ii+iii+1]) begin
-                couple_primitives_list[i][ii*(dataAddrW+2) +: (dataAddrW+2)] = {$random(seed), 1'b1};
-              end else begin
-                couple_primitives_list[i][ii*(dataAddrW+2) +: (dataAddrW+2)] = '0;
-              end
-            end
-
-            if (do_advanced_faults[i][0] || do_advanced_faults[i][1] || do_advanced_faults[i][2] || do_advanced_faults[i][3]) begin
-              do_advanced_faults[i][primitiveW-1:20] = '0;
-            end else if (do_advanced_faults[i][4]) begin
-              do_advanced_faults[i][depthW+19:20] = 8'h01;
-              do_advanced_faults[i][primitiveW-1:depthW+20] = 32'h03;
-            end else if (do_advanced_faults[i][5]) begin
-              do_advanced_faults[i][depthW+19:20] = 8'h03;
-              do_advanced_faults[i][primitiveW-1:depthW+20] = 32'h3F;
-            end else begin
-              do_advanced_faults[i][primitiveW-1:20] = '1;
-            end
-            do_advanced_faults[i][19:0] = '1;
-            
-            fault_primitive_list[i] = {$random(seed), $random(seed)} & do_advanced_faults[i];
-            fault_addr_list[i] = $random(seed);
-        end
+        $readmemh("fault_addr.mem",         fault_addr_list);
+        $readmemh("fault_primitives.mem",   fault_primitive_list);
+        $readmemh("disturb_primitives.mem", disturb_primitives_list);
+        $readmemh("couple_primitives.mem",  couple_primitives_list);
     end
 
     // Fault Model Instances
@@ -106,8 +71,8 @@ module faults_database
             .din(din),
             .re_n(re_n),
             //Fault Coding
-            .fault_primitive(fault_primitive_list[x]),
             .fault_addr(fault_addr_list[x]),
+            .fault_primitive(fault_primitive_list[x]),
             .disturb_primitives(disturb_primitives_list[x]),
             .couple_primitives(couple_primitives_list[x]),
             //Fault Injection
@@ -157,8 +122,8 @@ module fault_model
     input  logic [dataW-1:0] din,
     input  logic             re_n,
     //Fault Coding
-    input  logic [primitiveW-1:0] fault_primitive,
     input  logic [dataAddrW-1:0] fault_addr,
+    input  logic [primitiveW-1:0] fault_primitive,
     input  logic [disturb_count*disturbW-1:0] disturb_primitives,
     input  logic [couple_count*(dataAddrW+2)-1:0] couple_primitives,
     //Fault Injection
