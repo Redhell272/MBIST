@@ -6,7 +6,7 @@ module testbench;
   localparam int random_seed = 42;
   localparam int disturb_count = 2;
   localparam int couple_count = 4;
-  localparam int watch_depth = 4;
+  localparam int watch_depth = 3;
   localparam int addrW = 10;
   localparam int dataW = 32;
 

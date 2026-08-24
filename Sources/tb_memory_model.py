@@ -4,11 +4,32 @@ import sys
 filepath = "testbench.log"
 results_filepath = "testbench.results"
 
-disturb_n = 2
-couple_n = 4
-depthW = 1
-addrW = 10
-dataW = 5
+import re
+import math
+import os
+
+# Read base parameters from testbench
+_tb_path = os.path.join(os.path.dirname(__file__), "tb_memory_model.sv")
+with open(_tb_path) as _f:
+    _src = _f.read()
+
+def _param(name):
+    m = re.search(rf"localparam\s+int\s+{name}\s*=\s*(\d+)\s*;", _src)
+    if not m:
+        raise ValueError(f"Parameter '{name}' not found in tb_memory_model.sv")
+    return int(m.group(1))
+
+fault_count = _param("fault_count")
+random_seed = _param("random_seed")
+disturb_n   = _param("disturb_count")
+couple_n    = _param("couple_count")
+watch_depth = _param("watch_depth")
+addrW       = _param("addrW")
+dataW       = _param("dataW")
+
+# Derived parameters, mirroring faults_database.sv localparams
+depthW     = math.ceil(math.log2(watch_depth)) if watch_depth > 1 else 1
+dataW  = math.ceil(math.log2(dataW))
 
 linebreak = "================================================================================================================================"
 
