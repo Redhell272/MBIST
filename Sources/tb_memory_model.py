@@ -1,12 +1,11 @@
 
 import sys
-
-filepath = "testbench.log"
-results_filepath = "testbench.results"
-
 import re
 import math
 import os
+
+filepath = "testbench.log"
+results_filepath = "testbench.results"
 
 # Read base parameters from testbench
 _tb_path = os.path.join(os.path.dirname(__file__), "tb_memory_model.sv")
@@ -209,13 +208,13 @@ print(f'\nDetected/Undetected Faults by Type:\n')
 for i in range(8):
     detected = detected_faults[i]
     undetected = undetected_faults[i]
-    print(f'Detected Faults of type{fault_type_map(i)}: (Fault Success Rate = {(len(detected)/prim_type_counts[i])*100:.2f}%)')
+    print(f'  Detected Faults of type{fault_type_map(i)}: (Fault Success Rate = {(len(detected)/prim_type_counts[i])*100:.2f}%)')
     for j in detected:
-        print(f'  [{j:03d}] 0x{faults[j][0][0]:03X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
+        print(f'    [{j:03d}] 0x{faults[j][0][0]:03X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
     if len(undetected) != 0:
-        print(f'Undetected Faults of type{fault_type_map(i)}:')
+        print(f'  Undetected Faults of type{fault_type_map(i)}:')
         for j in undetected:
-            print(f'  [{j:03d}] 0x{faults[j][0][0]:03X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
+            print(f'    [{j:03d}] 0x{faults[j][0][0]:03X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
     print()
 
 # Analyze linked faults
