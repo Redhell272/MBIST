@@ -1,6 +1,7 @@
 module faults_database
   #(
     parameter int base_index = 0,    //Base index for labelling and offsets
+    parameter int mem_len = 64,      //Total number of faults in memory files
     parameter int fault_count = 16,  //Number of faults in database
     parameter int disturb_count = 4, //GOTO: fault_model
     parameter int couple_count = 16, //GOTO: fault_model
@@ -31,7 +32,9 @@ module faults_database
     localparam int primitiveW = 2*watch_depth+depthW+20;      //GOTO: fault_model
     localparam int dataAddrW = addrW + $clog2(dataW);         //GOTO: fault_model
     localparam int disturbW = primitiveW-20+dataAddrW;        //GOTO: fault_model
-    localparam int mem_end = (base_index + 1) * fault_count;  //Necessary depth of .mem files
+
+    localparam int addr_offset = (base_index >> 1) << addrW;
+    localparam int bit_offset = (base_index & 1) << $clog2(dataW);
 
     // Random Values for Fault Coding
     logic [dataAddrW-1:0] fault_addr_list[fault_count-1:0];
@@ -40,10 +43,10 @@ module faults_database
     logic [couple_count*(dataAddrW+2)-1:0] couple_primitives_list[fault_count-1:0];
 
     // Temp arrays sized to reach this instance's memory slice in .mem files
-    logic [dataAddrW-1:0]                  tmp_fa[mem_end];
-    logic [primitiveW-1:0]                 tmp_fp[mem_end];
-    logic [disturb_count*disturbW-1:0]     tmp_dp[mem_end];
-    logic [couple_count*(dataAddrW+2)-1:0] tmp_cp[mem_end];
+    logic [dataAddrW-1:0]                  tmp_fa[0:mem_len-1];
+    logic [primitiveW-1:0]                 tmp_fp[0:mem_len-1];
+    logic [disturb_count*disturbW-1:0]     tmp_dp[0:mem_len-1];
+    logic [couple_count*(dataAddrW+2)-1:0] tmp_cp[0:mem_len-1];
 
     string mem_dir;
     initial begin
@@ -59,19 +62,17 @@ module faults_database
             disturb_primitives_list[i] = tmp_dp[base_index*fault_count + i];
             couple_primitives_list[i]  = tmp_cp[base_index*fault_count + i];
         end
-    end
 
-    initial begin
         @(posedge nres);
-        #1;
+        @(posedge clk);
         for (int k = 0; k < fault_count; k++) begin
-            $fdisplay(log_fd | 32'h1, "  [%03d] addr=0x%04h bit=%02d primitive=0x%010h disturb=0x%032X couple=0x%064X",
-                base_index*fault_count+k,
-                fault_addr_list[k][addrW-1:0] + base_index << addrW,
-                fault_addr_list[k] >> addrW,
-                fault_primitive_list[k],
-                disturb_primitives_list[k],
-                couple_primitives_list[k]);
+          $fdisplay(log_fd | 32'h1, "  [%03d] addr=0x%04h bit=%02d primitive=0x%010h disturb=0x%032X couple=0x%064X",
+              base_index*fault_count+k,
+              fault_addr_list[k][addrW-1:0] + addr_offset,
+              (fault_addr_list[k] >> addrW) + bit_offset,
+              fault_primitive_list[k],
+              disturb_primitives_list[k],
+              couple_primitives_list[k]);
         end
     end
 

@@ -43,7 +43,7 @@ module memory_model
     logic [dataW-1:0] mem_bwe_n;
     logic [dataW-1:0] mem_din;
     logic             mem_re_n;
-    wire  [dataW-1:0] mem_dout;
+    logic [dataW-1:0] mem_dout;
 
     logic             mbist_cs_n;
     logic [addrW-1:0] mbist_addr;
@@ -55,7 +55,8 @@ module memory_model
 
     logic             mbist_sel;
 
-    logic [mem_sections-1:0] mem_cs_n_array;
+    logic mem_cs_n_array [mem_sections-1:0];
+    logic [dataW-1:0] mem_dout_array [mem_sections-1:0];
 
     assign mem_cs_n   = mbist_sel ? mbist_cs_n   : cs_n;
     assign mem_addr   = mbist_sel ? mbist_addr   : addr;
@@ -103,6 +104,7 @@ module memory_model
         for (y = 0; y < parallel_mems; y = y + 1) begin
           fault_injection_wrapper #(
             .base_index(base_index+parallel_mems*x+y),
+            .mem_len(fault_count),
             .fault_count(mem_fault_count),
             .disturb_count(disturb_count),
             .couple_count(couple_count),
@@ -122,10 +124,19 @@ module memory_model
             .din(mem_din[(mem_dataW*(y+1))-1:(mem_dataW*y)]),
             // Read
             .re_n(mem_re_n),
-            .dout(mem_dout[(mem_dataW*(y+1))-1:(mem_dataW*y)])
+            .dout(mem_dout_array[x][(mem_dataW*(y+1))-1:(mem_dataW*y)])
           );
         end
       end
     endgenerate
+
+    // Memory Section Output Mux
+    always_comb begin
+      mem_dout = '0;
+      for (int i = 0; i < mem_sections; i++) begin
+        if (mem_addr[addrW-1:mem_addrW] == i)
+          mem_dout = mem_dout_array[i];
+      end
+    end
 
 endmodule

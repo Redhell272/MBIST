@@ -91,9 +91,10 @@ faults = []
 primitives = []
 prim_type_counts = [0, 0, 0, 0, 0, 0, 0, 0]
 for i in range(n_faults):
+    index = int(text_array[2 + i][0].split("[")[1].split("]")[0])
     addr = int(text_array[2 + i][1].split("=")[1], 16)
     bit = int(text_array[2 + i][2].split("=")[1])
-    faults.append([[addr, bit],[]])
+    faults.append([[index, addr, bit],[]])
 
     prim = int(text_array[2 + i][3].split("=")[1], 16)
     disturb = int(text_array[2 + i][4].split("=")[1], 16)
@@ -156,6 +157,10 @@ for i in range(n_faults):
     primitives.append([prim_type, prim_text])
     prim_type_counts[prim_type] += 1
 
+# Sort faults by index
+faults.sort(key=lambda x: x[0][0])
+for fault in faults:
+    fault[0] = fault[0][1:]  # Remove the index from the fault address
 
 # Match the faults found by the MBIST with the faults
 for text in text_array[5 + n_faults:-3]:

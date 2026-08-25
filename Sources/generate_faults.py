@@ -16,6 +16,8 @@ def _param(name):
     return int(m.group(1))
 
 random_seed   = _param("random_seed")
+parallel_mems = _param("parallel_mems")
+mem_sections  = _param("mem_sections")
 fault_count   = _param("fault_count")
 disturb_count = _param("disturb_count")
 couple_count  = _param("couple_count")
@@ -23,10 +25,14 @@ watch_depth   = _param("watch_depth")
 addrW         = _param("addrW")
 dataW         = _param("dataW")
 
+# Effective addrW/dataW as seen by faults_database (after sectioning/parallelism)
+mem_addrW = addrW - math.ceil(math.log2(mem_sections))
+mem_dataW = dataW // parallel_mems
+
 # Derived parameters, mirroring faults_database.sv localparams
 depthW     = math.ceil(math.log2(watch_depth)) if watch_depth > 1 else 1
-primitiveW = 2 * watch_depth + depthW + 20
-dataAddrW  = addrW + math.ceil(math.log2(dataW))
+primitiveW = (2 * watch_depth) + depthW + 20
+dataAddrW  = mem_addrW + math.ceil(math.log2(mem_dataW))
 disturbW   = primitiveW - 20 + dataAddrW
 
 R = random.Random(random_seed)
