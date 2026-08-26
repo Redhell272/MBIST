@@ -18,15 +18,23 @@ def _param(name):
         raise ValueError(f"Parameter '{name}' not found in tb_memory_model.sv")
     return int(m.group(1))
 
-disturb_n   = _param("disturb_count")
-couple_n    = _param("couple_count")
-watch_depth = _param("watch_depth")
-addrW       = _param("addrW")
-dataW       = _param("dataW")
+parallel_mems   = _param("parallel_mems")
+mem_sections    = _param("mem_sections")
+disturb_n       = _param("disturb_count")
+couple_n        = _param("couple_count")
+watch_depth     = _param("watch_depth")
+addrW           = _param("addrW")
+dataW           = _param("dataW")
 
 # Derived parameters, mirroring faults_database.sv localparams
-depthW     = math.ceil(math.log2(watch_depth)) if watch_depth > 1 else 1
-dataW  = math.ceil(math.log2(dataW))
+mem_addrW   = addrW - math.ceil(math.log2(mem_sections))
+mem_dataW   = dataW // parallel_mems
+depthW      = math.ceil(math.log2(watch_depth)) if watch_depth > 1 else 1
+addrW       = mem_addrW
+dataW       = math.ceil(math.log2(mem_dataW))
+primitiveW  = (2 * watch_depth) + depthW + 20
+dataAddrW   = mem_addrW + math.ceil(math.log2(mem_dataW))
+disturbW    = primitiveW - 20 + dataAddrW
 
 linebreak = "================================================================================================================================"
 
@@ -96,6 +104,9 @@ for i in range(n_faults):
     bit = int(text_array[2 + i][2].split("=")[1])
     faults.append([[index, addr, bit],[]])
 
+    addr_offset = (addr >> addrW) << addrW
+    bit_offset = (bit >> dataW) << dataW
+
     prim = int(text_array[2 + i][3].split("=")[1], 16)
     disturb = int(text_array[2 + i][4].split("=")[1], 16)
     couple = int(text_array[2 + i][5].split("=")[1], 16)
@@ -113,16 +124,27 @@ for i in range(n_faults):
     prim_text += f'|'
 
     if prim_watch_cnt != 0:
-        prim_text += f'(w={prim_watch_cnt:01d}:{prim_watch_pattern:04X})'
+        prim_text += f'(w={prim_watch_cnt:01d}:'
+        for j in range(prim_watch_cnt):
+            watch_code = (prim_watch_pattern >> (j*2)) & 0x03
+            if watch_code == 3:
+                prim_text += f'W1'
+            elif watch_code == 2:
+                prim_text += f'W0'
+            else:
+                prim_text += f'RX'
+        for j in range(prim_watch_cnt, watch_depth):
+            prim_text += f'  '
+        prim_text += f')'
     else:
-        prim_text += f'          '
+        prim_text += f'            '
 
     prim_text += f'|'
 
     for j in range(disturb_n):
         disturb_prim = (disturb >> (j*(addrW+dataW+depthW+2**(depthW+1)))) & bitmask(addrW+dataW+depthW+2**(depthW+1))
-        disturb_addr = disturb_prim & bitmask(addrW)
-        disturb_bit = (disturb_prim >> addrW) & bitmask(dataW)
+        disturb_addr = (disturb_prim & bitmask(addrW)) + addr_offset
+        disturb_bit = ((disturb_prim >> addrW) & bitmask(dataW)) + bit_offset
         disturb_count = (disturb_prim >> (addrW+dataW)) & bitmask(depthW)
         disturb_pattern = (disturb_prim >> (addrW+dataW+depthW)) & bitmask(2**(depthW+1))
         
@@ -136,9 +158,11 @@ for i in range(n_faults):
                     prim_text += f'W0'
                 else:
                     prim_text += f'RX'
+            for j in range(disturb_count, watch_depth):
+                prim_text += f'  '
             prim_text += f')'
         else:
-            prim_text += f'             '
+            prim_text += f'                 '
 
     prim_text += f'|'
 
@@ -146,8 +170,8 @@ for i in range(n_faults):
         couple_prim = (couple >> (j*(2+addrW+dataW))) & bitmask(2+addrW+dataW)
         couple_en = couple_prim & 0x01
         couple_value = (couple_prim >> 1) & 0x01
-        couple_addr = (couple_prim >> 2) & bitmask(addrW)
-        couple_bit = (couple_prim >> (2+addrW)) & bitmask(dataW)
+        couple_addr = ((couple_prim >> 2) & bitmask(addrW)) + addr_offset
+        couple_bit = ((couple_prim >> (2+addrW)) & bitmask(dataW)) + bit_offset
         
         if couple_en != 0:
             prim_text += f'(c={couple_addr:03X}:{couple_bit:02d}|{couple_value:01d})'
@@ -157,8 +181,8 @@ for i in range(n_faults):
     primitives.append([prim_type, prim_text])
     prim_type_counts[prim_type] += 1
 
-# Sort faults by index
-faults.sort(key=lambda x: x[0][0])
+# Sort faults and primitives together by index
+faults, primitives = map(list, zip(*sorted(zip(faults, primitives), key=lambda x: x[0][0][0])))
 for fault in faults:
     fault[0] = fault[0][1:]  # Remove the index from the fault address
 
@@ -187,7 +211,7 @@ for i, fault in enumerate(faults):
     reads = ""
     for read in fault[1]:
         reads += f'[{state_map(read[0])}:r{read[2]}]'
-    print(f'[{i:03d}] 0x{fault[0][0]:03X}:{fault[0][1]:02d} |n:{n if n > 0 else " "}| prim={primitives[i][1]} | Failing Reads={reads} n={n}')
+    print(f'[{i:04d}] 0x{fault[0][0]:03X}:{fault[0][1]:02d} |n:{n if n > 0 else " "}| prim={primitives[i][1]} | Failing Reads={reads} n={n}')
 
     if n > 0:
         n_found += 1
@@ -213,11 +237,11 @@ for i in range(8):
     undetected = undetected_faults[i]
     print(f'  Detected Faults of type{fault_type_map(i)}: (Fault Success Rate = {(len(detected)/prim_type_counts[i])*100:.2f}%)')
     for j in detected:
-        print(f'    [{j:03d}] 0x{faults[j][0][0]:03X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
+        print(f'    [{j:04d}] 0x{faults[j][0][0]:03X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
     if len(undetected) != 0:
         print(f'  Undetected Faults of type{fault_type_map(i)}:')
         for j in undetected:
-            print(f'    [{j:03d}] 0x{faults[j][0][0]:03X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
+            print(f'    [{j:04d}] 0x{faults[j][0][0]:03X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
     print()
 
 # Analyze linked faults
@@ -243,7 +267,7 @@ if len(linked_faults) != 0:
     print(linebreak)
     print(f'\nLinked Faults:\n')
     for indices in linked_faults:
-        print(f'addr=0x{faults[indices[0]][0][0]:03X} bit={faults[indices[0]][0][1]:02d} has linked faults {indices} | Primitives {[primitives[i][1].replace(" ", "") for i in indices]}')
+        print(f'addr=0x{faults[indices[0]][0][0]:03X} bit={faults[indices[0]][0][1]:02d} has linked faults {[f"{i:04d}" for i in indices]} | Primitives {[primitives[i][1].replace(" ", "") for i in indices]}')
     print()
 
 print(linebreak)

@@ -66,7 +66,7 @@ module faults_database
         @(posedge nres);
         @(posedge clk);
         for (int k = 0; k < fault_count; k++) begin
-          $fdisplay(log_fd | 32'h1, "  [%03d] addr=0x%04h bit=%02d primitive=0x%010h disturb=0x%032X couple=0x%064X",
+          $fdisplay(log_fd | 32'h1, "  [%04d] addr=0x%04h bit=%02d primitive=0x%010h disturb=0x%032X couple=0x%064X",
               base_index*fault_count+k,
               fault_addr_list[k][addrW-1:0] + addr_offset,
               (fault_addr_list[k] >> addrW) + bit_offset,

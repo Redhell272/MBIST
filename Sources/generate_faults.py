@@ -4,6 +4,9 @@ import math
 import os
 import random
 
+def bitmask(w):
+    return (1 << w) - 1
+
 # Read base parameters from testbench
 _tb_path = os.path.join(os.path.dirname(__file__), "tb_memory_model.sv")
 with open(_tb_path) as _f:
@@ -25,11 +28,9 @@ watch_depth   = _param("watch_depth")
 addrW         = _param("addrW")
 dataW         = _param("dataW")
 
-# Effective addrW/dataW as seen by faults_database (after sectioning/parallelism)
-mem_addrW = addrW - math.ceil(math.log2(mem_sections))
-mem_dataW = dataW // parallel_mems
-
 # Derived parameters, mirroring faults_database.sv localparams
+mem_addrW  = addrW - math.ceil(math.log2(mem_sections))
+mem_dataW  = dataW // parallel_mems
 depthW     = math.ceil(math.log2(watch_depth)) if watch_depth > 1 else 1
 primitiveW = (2 * watch_depth) + depthW + 20
 dataAddrW  = mem_addrW + math.ceil(math.log2(mem_dataW))
@@ -39,31 +40,55 @@ R = random.Random(random_seed)
 base = [(R.randint(0x00, 0xFF)) for _ in range(fault_count)]
 
 def fault(c, i):
-    p_rand = R.randint(0, 2**primitiveW - 1)
-    d_rand = R.randint(0, 2**(disturb_count*disturbW) - 1)
-    c_rand = R.randint(0, 2**(couple_count*(dataAddrW+2)) - 1)
 
+    init_bit = R.randint(0, 1)
+    primitive = 0
+    prim_rand = R.randint(0, 2**16)
 
+    prim_couple = 0
+    prim_couple_pattern = 0
+
+    disturb = [[0, 0, 0] for _ in range(disturb_count)] #[addr, count, pattern]
+    couple = [[0, 0, 0] for _ in range(couple_count)] #[en, mask, addr]
 
     match base[i] % 4:
         case 0:
-            p_val = p_rand
-            d_val = d_rand
-            c_val = c_rand
+            primitive = R.randint(0, 7)
+            prim_couple = R.randint(0, bitmask(depthW))
+            prim_couple_pattern = R.randint(0, bitmask(watch_depth*2))
         case 1:
-            p_val = p_rand
-            d_val = 0x00
-            c_val = c_rand
+            primitive = R.randint(0, 7)
+            for j in range(disturb_count):
+                disturb[j][0] = R.randint(0, 2**dataAddrW - 1)
+                disturb[j][1] = R.randint(0, bitmask(depthW))
+                disturb[j][2] = R.randint(0, bitmask(watch_depth*2))
         case 2:
-            p_val = p_rand
-            d_val = d_rand
-            c_val = 0x00
+            primitive = R.randint(0, 7)
+            for j in range(couple_count):
+                couple[j][0] = R.randint(0, 1)
+                couple[j][1] = R.randint(0, 1)
+                couple[j][2] = R.randint(0, 2**dataAddrW - 1)
         case _:
-            p_val = p_rand
-            d_val = 0x00
-            c_val = 0x00
+            primitive = R.randint(0, 7)
 
+    p_val = 0
+    p_val |= (init_bit & 0x1) << 0
+    p_val |= (primitive & 0x7) << 1
+    p_val |= (prim_rand & 0xFFFF) << 4
+    p_val |= (prim_couple & bitmask(depthW)) << 20
+    p_val |= (prim_couple_pattern & bitmask(watch_depth*2)) << (20+depthW)
 
+    d_val = 0
+    for j in range(disturb_count):
+        d_val |= (disturb[j][0] & bitmask(dataAddrW)) << (j*disturbW + 0)
+        d_val |= (disturb[j][1] & bitmask(depthW)) << (j*disturbW + dataAddrW)
+        d_val |= (disturb[j][2] & bitmask(watch_depth*2)) << (j*disturbW + dataAddrW + depthW)
+
+    c_val = 0
+    for j in range(couple_count):
+        c_val |= (couple[j][0] & 0x1) << (j*(2+dataAddrW) + 0)
+        c_val |= (couple[j][1] & 0x1) << (j*(2+dataAddrW) + 1)
+        c_val |= (couple[j][2] & bitmask(dataAddrW)) << (j*(2+dataAddrW) + 2)
 
     if c == "d":
         return d_val
