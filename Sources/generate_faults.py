@@ -51,7 +51,9 @@ def fault(c, i):
     disturb = [[0, 0, 0] for _ in range(disturb_count)] #[addr, count, pattern]
     couple = [[0, 0, 0] for _ in range(couple_count)] #[en, mask, addr]
 
-    match base[i] % 4:
+
+
+    match base[i] % 8:
         case 0:
             primitive = R.randint(0, 7)
             prim_couple = R.randint(0, bitmask(depthW))
@@ -70,6 +72,8 @@ def fault(c, i):
                 couple[j][2] = R.randint(0, 2**dataAddrW - 1)
         case _:
             primitive = R.randint(0, 7)
+
+
 
     p_val = 0
     p_val |= (init_bit & 0x1) << 0
