@@ -58,23 +58,26 @@ for i, b in enumerate(base):
 
 
     match b % 8:
-        case 0:
+        case 0: # Check watching
             primitive = R.randint(0, 7)
             prim_couple = R.randint(0, bitmask(depthW))
             prim_couple_pattern = R.randint(0, bitmask(watch_depth*2))
-        case 1:
+
+        case 1: # Check disturb
             primitive = R.randint(0, 7)
             for j in range(disturb_count):
                 disturb[j][0] = R.randint(0, 2**dataAddrW - 1)
                 disturb[j][1] = R.randint(0, bitmask(depthW))
                 disturb[j][2] = R.randint(0, bitmask(watch_depth*2))
-        case 2:
+
+        case 2: # Check coupling
             primitive = R.randint(0, 7)
             for j in range(couple_count):
                 couple[j][0] = R.randint(0, 1)
                 couple[j][1] = R.randint(0, 1)
                 couple[j][2] = R.randint(0, 2**dataAddrW - 1)
-        case _:
+                
+        case _: # Mostly just do static faults
             primitive = R.randint(0, 7)
 
 
