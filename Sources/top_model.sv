@@ -1,4 +1,4 @@
-module full_model
+module top_model
   #(
     parameter int parallel_mems = 2, //GOTO: /memory_model
     parameter int mem_sections = 8,  //GOTO: /memory_model

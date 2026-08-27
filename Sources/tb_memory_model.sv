@@ -51,7 +51,7 @@ module testbench;
   wire [dataW-1:0] mem2_mbist_fault_expc;
   
   // Instantiate Units Under Test
-  full_model #(
+  top_model #(
       .parallel_mems(parallel_mems),
       .mem_sections(mem_sections),
       .fault_count(fault_count),
