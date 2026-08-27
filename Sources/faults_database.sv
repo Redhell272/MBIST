@@ -2,6 +2,7 @@ module faults_database
   #(
     parameter int base_index = 0,    //Base index for labelling and offsets
     parameter int mem_len = 64,      //Total number of faults in memory files
+    parameter int parallel_mems = 2, //GOTO: /memory_model
     parameter int fault_count = 16,  //Number of faults in database
     parameter int disturb_count = 4, //GOTO: fault_model
     parameter int couple_count = 16, //GOTO: fault_model
@@ -33,8 +34,8 @@ module faults_database
     localparam int dataAddrW = addrW + $clog2(dataW);         //GOTO: fault_model
     localparam int disturbW = primitiveW-20+dataAddrW;        //GOTO: fault_model
 
-    localparam int addr_offset = (base_index >> 1) << addrW;
-    localparam int bit_offset = (base_index & 1) << $clog2(dataW);
+    localparam int addr_offset = (base_index / parallel_mems) << addrW;
+    localparam int bit_offset = (base_index % parallel_mems) << $clog2(dataW);
 
     // Random Values for Fault Coding
     logic [dataAddrW-1:0] fault_addr_list[fault_count-1:0];

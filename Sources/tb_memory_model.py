@@ -181,10 +181,12 @@ for i in range(n_faults):
     primitives.append([prim_type, prim_text])
     prim_type_counts[prim_type] += 1
 
+
 # Sort faults and primitives together by index
 faults, primitives = map(list, zip(*sorted(zip(faults, primitives), key=lambda x: x[0][0][0])))
 for fault in faults:
-    fault[0] = fault[0][1:]  # Remove the index from the fault address
+    fault[0] = fault[0][1:]  # Remove the index from the fault entry
+
 
 # Match the faults found by the MBIST with the faults
 for text in text_array[5 + n_faults:-3]:
@@ -211,7 +213,7 @@ for i, fault in enumerate(faults):
     reads = ""
     for read in fault[1]:
         reads += f'[{state_map(read[0])}:r{read[2]}]'
-    print(f'[{i:04d}] 0x{fault[0][0]:03X}:{fault[0][1]:02d} |n:{n if n > 0 else " "}| prim={primitives[i][1]} | Failing Reads={reads} n={n}')
+    print(f'[{i:04d}] 0x{fault[0][0]:04X}:{fault[0][1]:02d} |n:{n if n > 0 else " "}| prim={primitives[i][1]} | Failing Reads={reads} n={n}')
 
     if n > 0:
         n_found += 1
@@ -237,11 +239,11 @@ for i in range(8):
     undetected = undetected_faults[i]
     print(f'  Detected Faults of type{fault_type_map(i)}: (Fault Success Rate = {(len(detected)/prim_type_counts[i])*100:.2f}%)')
     for j in detected:
-        print(f'    [{j:04d}] 0x{faults[j][0][0]:03X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
+        print(f'    [{j:04d}] 0x{faults[j][0][0]:04X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
     if len(undetected) != 0:
         print(f'  Undetected Faults of type{fault_type_map(i)}:')
         for j in undetected:
-            print(f'    [{j:04d}] 0x{faults[j][0][0]:03X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
+            print(f'    [{j:04d}] 0x{faults[j][0][0]:04X}:{faults[j][0][1]:02d} prim={primitives[j][1]}')
     print()
 
 # Analyze linked faults
@@ -267,7 +269,7 @@ if len(linked_faults) != 0:
     print(linebreak)
     print(f'\nLinked Faults:\n')
     for indices in linked_faults:
-        print(f'addr=0x{faults[indices[0]][0][0]:03X} bit={faults[indices[0]][0][1]:02d} has linked faults {[f"{i:04d}" for i in indices]} | Primitives {[primitives[i][1].replace(" ", "") for i in indices]}')
+        print(f'addr=0x{faults[indices[0]][0][0]:04X} bit={faults[indices[0]][0][1]:02d} has linked faults {[f"{i:04d}" for i in indices]} | Primitives {[primitives[i][1].replace(" ", "") for i in indices]}')
     print()
 
 print(linebreak)

@@ -37,7 +37,7 @@ dataAddrW  = mem_addrW + math.ceil(math.log2(mem_dataW))
 disturbW   = primitiveW - 20 + dataAddrW
 
 R = random.Random(random_seed)
-base = [(R.randint(0x00, 0xFF)) for _ in range(fault_count)]
+base = [(R.randint(0, 1000)) for _ in range(fault_count)]
 addr = [(R.randint(0, 2**dataAddrW - 1)) for _ in range(fault_count)]
 p_vals = []
 d_vals = []

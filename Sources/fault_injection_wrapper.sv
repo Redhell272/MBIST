@@ -2,6 +2,7 @@ module fault_injection_wrapper
   #(
     parameter int base_index = 0,    //GOTO: /faults_database
     parameter int mem_len = 64,      //GOTO: /faults_database
+    parameter int parallel_mems = 2, //GOTO: /memory_model
     parameter int fault_count = 16,  //GOTO: /faults_database
     parameter int disturb_count = 4, //GOTO: /faults_database/fault_model
     parameter int couple_count = 16, //GOTO: /faults_database/fault_model
@@ -34,6 +35,7 @@ module fault_injection_wrapper
     faults_database #(
       .base_index(base_index),
       .mem_len(mem_len),
+      .parallel_mems(parallel_mems),
       .fault_count(fault_count),
       .disturb_count(disturb_count),
       .couple_count(couple_count),
