@@ -96,12 +96,12 @@ module memory_model
     // Memory Sections
     genvar x,y;
     generate
-      for (x = 0; x < mem_sections; x = x + 1) begin
+      for (x = 0; x < mem_sections; x = x + 1) begin : mem_sect
         // Chip Select Decoder
         assign mem_cs_n_array[x] = (mem_addr[addrW-1:mem_addrW] == x) ? mem_cs_n : 1'b1;
 
         // Parallel Memories
-        for (y = 0; y < parallel_mems; y = y + 1) begin
+        for (y = 0; y < parallel_mems; y = y + 1) begin : mem_inst
           fault_injection_wrapper #(
             .base_index(base_index+parallel_mems*x+y),
             .mem_len(fault_count),

@@ -81,7 +81,7 @@ module faults_database
     logic     [dataW-1:0] fault_r_list[fault_count-1:0];
     genvar x;
     generate
-        for (x = 0; x < fault_count; x = x + 1) begin
+        for (x = 0; x < fault_count; x = x + 1) begin : fault_models
             fault_model #(
             .disturb_count(disturb_count),
             .couple_count(couple_count),
@@ -257,7 +257,7 @@ module fault_model
 
     genvar x;
     generate
-      for (x = 0; x < disturb_count; x = x + 1) begin
+      for (x = 0; x < disturb_count; x = x + 1) begin : disturb_watchers
         address_watcher #(
           .watch_depth(watch_depth),
           .depthW(depthW),
@@ -286,7 +286,7 @@ module fault_model
 
     genvar y;
     generate
-      for (y = 0; y < couple_count; y = y + 1) begin
+      for (y = 0; y < couple_count; y = y + 1) begin : couple_trackers
         address_tracker #(
           .dataAddrW(dataAddrW),
           .addrW(addrW),
