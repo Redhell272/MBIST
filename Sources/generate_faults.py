@@ -38,8 +38,12 @@ disturbW   = primitiveW - 20 + dataAddrW
 
 R = random.Random(random_seed)
 base = [(R.randint(0x00, 0xFF)) for _ in range(fault_count)]
+addr = [(R.randint(0, 2**dataAddrW - 1)) for _ in range(fault_count)]
+p_vals = []
+d_vals = []
+c_vals = []
 
-def fault(c, i):
+for i, b in enumerate(base):
 
     init_bit = R.randint(0, 1)
     primitive = 0
@@ -49,11 +53,11 @@ def fault(c, i):
     prim_couple_pattern = 0
 
     disturb = [[0, 0, 0] for _ in range(disturb_count)] #[addr, count, pattern]
-    couple = [[0, 0, 0] for _ in range(couple_count)] #[en, mask, addr]
+    couple = [[0, 0, 0] for _ in range(couple_count)] #[en, value, addr]
 
 
 
-    match base[i] % 8:
+    match b % 8:
         case 0:
             primitive = R.randint(0, 7)
             prim_couple = R.randint(0, bitmask(depthW))
@@ -94,35 +98,32 @@ def fault(c, i):
         c_val |= (couple[j][1] & 0x1) << (j*(2+dataAddrW) + 1)
         c_val |= (couple[j][2] & bitmask(dataAddrW)) << (j*(2+dataAddrW) + 2)
 
-    if c == "d":
-        return d_val
-    elif c == "c":
-        return c_val
-    else:
-        return p_val
+    p_vals.append(p_val)
+    d_vals.append(d_val)
+    c_vals.append(c_val)
 
 
 
 with open(os.path.join(os.path.dirname(__file__), "fault_addr.mem"), "w") as f:
     for i in range(fault_count):
-        value = R.randint(0, 2**dataAddrW - 1)
+        value = addr[i]
         hex_digits = (dataAddrW + 3) // 4
         f.write(f"{value:0{hex_digits}X}\n")
 
 with open(os.path.join(os.path.dirname(__file__), "fault_primitives.mem"), "w") as f:
     for i in range(fault_count):
-        value = fault("p", i)
+        value = p_vals[i]
         hex_digits = (primitiveW + 3) // 4
         f.write(f"{value:0{hex_digits}X}\n")
 
 with open(os.path.join(os.path.dirname(__file__), "disturb_primitives.mem"), "w") as f:
     for i in range(fault_count):
-        value = fault("d", i)
+        value = d_vals[i]
         hex_digits = (disturb_count*disturbW + 3) // 4
         f.write(f"{value:0{hex_digits}X}\n")
 
 with open(os.path.join(os.path.dirname(__file__), "couple_primitives.mem"), "w") as f:
     for i in range(fault_count):
-        value = fault("c", i)
+        value = c_vals[i]
         hex_digits = (couple_count*(dataAddrW+2) + 3) // 4
         f.write(f"{value:0{hex_digits}X}\n")
