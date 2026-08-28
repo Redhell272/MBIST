@@ -189,6 +189,7 @@ for fault in faults:
 
 
 # Match the faults found by the MBIST with the faults
+mismatches = []
 for text in text_array[5 + n_faults:-3]:
     addr = int(text[6].split("=")[1], 16)
     bit = int(text[7].split("=")[1], 16)
@@ -198,9 +199,13 @@ for text in text_array[5 + n_faults:-3]:
     dout = (int(text[9].split("=")[1], 16) >> bit) & 0x01
     expc = (int(text[10].split("=")[1], 16) >> bit) & 0x01
 
+    found = False
     for i in range(n_faults):
         if faults[i][0] == [addr, bit]:
+            found = True
             faults[i][1].append([state, dout, expc])
+    if not found:
+        mismatches.append([addr, bit, state, dout, expc])
 
 
 # Print the fault detection results
@@ -270,6 +275,13 @@ if len(linked_faults) != 0:
     print(f'\nLinked Faults:\n')
     for indices in linked_faults:
         print(f'addr=0x{faults[indices[0]][0][0]:04X} bit={faults[indices[0]][0][1]:02d} has linked faults {[f"{i:04d}" for i in indices]} | Primitives {[primitives[i][1].replace(" ", "") for i in indices]}')
+    print()
+
+if mismatches != []:
+    print(linebreak)
+    print(f'\nMismatches Occurring in MBIST Simulation:\n')
+    for mismatch in mismatches:
+        print(f'addr=0x{mismatch[0]:04X} bit={mismatch[1]:02d} | state={state_map(mismatch[2])} | dout={mismatch[3]} | expc={mismatch[4]}')
     print()
 
 print(linebreak)
