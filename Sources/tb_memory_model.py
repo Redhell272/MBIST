@@ -85,12 +85,18 @@ def fault_type_map(fault_type):
 results_file = open(results_filepath, 'w')
 sys.stdout = Tee(sys.__stdout__, results_file)
 
+labels = []
+with open("testbench.faults", 'r') as f:
+    for line in f:
+        index = int(line[1:5])
+        label = line[7:13]
+        labels.append([index, label])
+
 # Read the log file and extract the relevant information
 text_array = []
 with open(filepath, 'r') as file:
     for line in file:
         text_array.append(line.split())
-        #print(line.split())
 
 
 # Extract the number of faults and their details
@@ -111,8 +117,14 @@ for i in range(n_faults):
     disturb = int(text_array[2 + i][4].split("=")[1], 16)
     couple = int(text_array[2 + i][5].split("=")[1], 16)
 
+    prim_text = " "
+    for label in labels:
+        if label[0] == index:
+            prim_text += f'{label[1]}:'
+            break                                                                                                               
+
     prim_type = (prim >> 1) & 0x07
-    prim_text = fault_type_map(prim_type) + f'({((prim >> 4) & 0x01)})'
+    prim_text += fault_type_map(prim_type) + f'({((prim >> 4) & 0x01)})'
     prim_watch_cnt = (prim >> 20) & bitmask(depthW)
     prim_watch_pattern = (prim >> (20+depthW)) & bitmask(prim_watch_cnt*2)
 

@@ -9,11 +9,10 @@ def bitmask(w):
     return (1 << w) - 1
 
 def near_addr(R, addr, mem_dataW, dataW, mem_addrW):
-    dataW = math.ceil(math.log2(dataW))
     dataBitmask = bitmask(math.ceil(math.log2(mem_dataW)))
     ns = 0
     ew = 0
-    while(((ns == 0) and (ew == 0)) or ((addr & dataBitmask) + ew >= mem_dataW) or ((addr & dataBitmask) + ew < 0) or ((addr >> dataW) + ns >= 2**mem_addrW) or ((addr >> dataW) + ns < 0)):
+    while(((ns == 0) and (ew == 0)) or ((addr & dataBitmask) + ew >= mem_dataW) or ((addr & dataBitmask) + ew < 0) or ((addr // dataW) + ns >= 2**mem_addrW) or ((addr // dataW) + ns < 0)):
         ns = R.randint(0, 11)
         ew = R.randint(0, 11)
 
@@ -53,7 +52,7 @@ def pattern_addr(R, addr, couple_count, mem_dataW, dataW, mem_addrW):
 
 def column_addr(addr, couple_count, dataW, mem_addrW):
     column = []
-    row = addr >> math.ceil(math.log2(dataW))
+    row = addr // dataW
     for i in range(couple_count):
         upDown = i & 0x01
         amount = (i >> 1) + 1
@@ -135,87 +134,87 @@ for i, b in enumerate(base):
     pattern_disturb = []
 
     if b < 250: #SAF - 25%
-        label = "SAF"
+        label = "   SAF"
         primitive = 0b000
     elif b < 330: #DRF - 8%
-        label = "DRF"
+        label = "   DRF"
         primitive = 0b001
     elif b < 430: #TF - 10%
-        label = "TF"
+        label = "    TF"
         primitive = 0b010
     elif b < 460: #WDF - 3%
-        label = "WDF"
+        label = "   WDF"
         primitive = 0b011
     elif b < 510: #RDF - 5%
-        label = "RDF"
+        label = "   RDF"
         primitive = 0b100
     elif b < 530: #DRDF - 2%
-        label = "DRDF"
+        label = "  DRDF"
         primitive = 0b101
     elif b < 550: #IRF - 2%
-        label = "IRF"
+        label = "   IRF"
         primitive = 0b110
     elif b < 560: #RRF - 1%
-        label = "RRF"
+        label = "   RRF"
         primitive = 0b111
 
     elif b < 640: #SOF - 8%
-        label = "SOF"
+        label = "   SOF"
         primitive = 0b111
     elif b < 650: #USF - 1%
-        label = "USF"
+        label = "   USF"
         primitive = 0b111
     elif b < 660: #NAF - 1%
-        label = "NAF"
+        label = "   NAF"
         primitive = 0b111
 
     elif b < 700: #CFst - 4%
-        label = "CFst"
+        label = "  CFst"
         primitive = 0b000
-        near_coupling = R.randint(0, 7)
+        near_coupling = R.randint(1, 8)
     elif b < 720: #CFds - 2%
-        label = "CFds"
+        label = "  CFds"
         primitive = 0b100
-        near_disturb = R.randint(0, 7)
+        near_disturb = R.randint(1, 8)
 
     elif b < 740: #CFtr - 2%
-        label = "CFtr"
+        label = "  CFtr"
         primitive = 0b010
-        near_coupling = R.randint(0, 7)
+        near_coupling = R.randint(1, 8)
     elif b < 750: #CFwd - 1%
-        label = "CFwd"
+        label = "  CFwd"
         primitive = 0b011
-        near_coupling = R.randint(0, 7)
+        near_coupling = R.randint(1, 8)
     elif b < 765: #CFrd - 1.5%
-        label = "CFrd"
+        label = "  CFrd"
         primitive = 0b100
-        near_coupling = R.randint(0, 7)
+        near_coupling = R.randint(1, 8)
     elif b < 775: #CFdrd - 1%
-        label = "CFdrd"
+        label = " CFdrd"
         primitive = 0b101
-        near_coupling = R.randint(0, 7)
+        near_coupling = R.randint(1, 8)
     elif b < 785: #CFir - 1%
-        label = "CFir"
+        label = "  CFir"
         primitive = 0b110
-        near_coupling = R.randint(0, 7)
+        near_coupling = R.randint(1, 8)
     elif b < 790: #CFrr - 0.5%
-        label = "CFrr"
+        label = "  CFrr"
         primitive = 0b111
-        near_coupling = R.randint(0, 7)
+        near_coupling = R.randint(1, 8)
 
     elif b < 805: #LRF - 1.5%
-        label = "LRF"
+        label = "   LRF"
         primitive = 0b100
         pattern_bit = [~prim_rand & 0x01 for _ in range(couple_count)]
         pattern_coupling = column_addr(addr[i], couple_count, dataW, mem_addrW)
 
     elif b < 845: #D1X - 4%
-        label = "D1X"
+        label = "   D1X"
         primitive = R.randint(0, 7)
         prim_watch = 1
         prim_watch_pattern = R.randint(0, 3)
     elif b < 855: #D2X - 1%
-        label = "D2X"
+        label = "   D2X"
         primitive = R.randint(0, 7)
         prim_watch = 2
         prim_watch_pattern = R.randint(0, 15)
@@ -237,17 +236,17 @@ for i, b in enumerate(base):
         pattern_disturb = pattern_addr(R, addr[i], disturb_count, mem_dataW, dataW, mem_addrW)
 
     elif b < 940: #ADF - 5%
-        label = "ADF"
+        label = "   ADF"
         primitive = 0b111
     elif b < 970: #ADOF - 3%
-        label = "ADOF"
+        label = "  ADOF"
         primitive = 0b100
         disturb[0][0] = near_addr(R, addr[i], mem_dataW, dataW, mem_addrW)
         disturb[0][1] = 1
         disturb[0][2] = R.randint(2, 3)
 
     elif b < 990: #SWDF - 2%
-        label = "SWDF"
+        label = "  SWDF"
         primitive = 0b010
         prim_watch = 1
         prim_watch_pattern = R.randint(2, 3)
@@ -259,18 +258,18 @@ for i, b in enumerate(base):
         disturb[0][2] = R.randint(0, 1)
 
 
-    near_coupling = 2 if near_coupling == 7 else 1 if near_coupling > 0 else 0
+    near_coupling = 2 if near_coupling == 8 else 1 if near_coupling > 0 else 0
     for ii in range(couple_count):
         if near_coupling > ii and couple_count > 0:
             couple[ii][0] = 1
             couple[ii][1] = R.randint(0, 1)
             couple[ii][2] = near_addr(R, addr[i], mem_dataW, dataW, mem_addrW)
 
-    near_disturb = 2 if near_disturb == 7 else 1 if near_disturb > 0 else 0
+    near_disturb = 2 if near_disturb == 8 else 1 if near_disturb > 0 else 0
     for ii in range(disturb_count):
         if near_disturb > ii and disturb_count > 0:
-            depth = R.randint(0, 7)
-            depth = 2 if depth == 7 else 1
+            depth = R.randint(1, 8)
+            depth = 2 if depth == 8 else 1
             disturb[ii][0] = near_addr(R, addr[i], mem_dataW, dataW, mem_addrW)
             disturb[ii][1] = depth
             disturb[ii][2] = R.randint(0, (4**depth)-1)
@@ -279,6 +278,11 @@ for i, b in enumerate(base):
         couple[ii][0] = 1
         couple[ii][1] = pattern_bit[ii]
         couple[ii][2] = addrs
+
+    for ii, addrs in enumerate(pattern_disturb):
+        disturb[ii][0] = addrs
+        disturb[ii][1] = 1
+        disturb[ii][2] = R.randint(2, 3)
 
 
     p_val = 0
