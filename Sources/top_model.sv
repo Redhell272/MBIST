@@ -29,25 +29,27 @@ module top_model
     input  logic             mem2_re_n,
     output logic [dataW-1:0] mem2_dout,
     //MEM1 MBIST Interface
-    input  logic             mem1_mbist_en,
-    output logic             mem1_mbist_fault,
-    output logic       [4:0] mem1_mbist_fault_state,
-    output logic [addrW-1:0] mem1_mbist_fault_addr,
-    output logic [dataW-1:0] mem1_mbist_fault_data,
-    output logic [dataW-1:0] mem1_mbist_fault_dout,
-    output logic [dataW-1:0] mem1_mbist_fault_expc,
+    input  logic                       [mem_sections-1:0] mem1_mbist_en,
+    output logic       [(mem_sections*parallel_mems)-1:0] mem1_mbist_fault,
+    output logic     [(mem_sections*parallel_mems*5)-1:0] mem1_mbist_fault_state,
+    output logic [(mem_sections*parallel_mems*addrW)-1:0] mem1_mbist_fault_addr,
+    output logic               [(mem_sections*dataW)-1:0] mem1_mbist_fault_data,
+    output logic               [(mem_sections*dataW)-1:0] mem1_mbist_fault_dout,
+    output logic               [(mem_sections*dataW)-1:0] mem1_mbist_fault_expc,
+    output logic                       [mem_sections-1:0] mem1_mbist_done,
     //MEM2 MBIST Interface
-    input  logic             mem2_mbist_en,
-    output logic             mem2_mbist_fault,
-    output logic       [4:0] mem2_mbist_fault_state,
-    output logic [addrW-1:0] mem2_mbist_fault_addr,
-    output logic [dataW-1:0] mem2_mbist_fault_data,
-    output logic [dataW-1:0] mem2_mbist_fault_dout,
-    output logic [dataW-1:0] mem2_mbist_fault_expc
+    input  logic                       [mem_sections-1:0] mem2_mbist_en,
+    output logic       [(mem_sections*parallel_mems)-1:0] mem2_mbist_fault,
+    output logic     [(mem_sections*parallel_mems*5)-1:0] mem2_mbist_fault_state,
+    output logic [(mem_sections*parallel_mems*addrW)-1:0] mem2_mbist_fault_addr,
+    output logic               [(mem_sections*dataW)-1:0] mem2_mbist_fault_data,
+    output logic               [(mem_sections*dataW)-1:0] mem2_mbist_fault_dout,
+    output logic               [(mem_sections*dataW)-1:0] mem2_mbist_fault_expc,
+    output logic                       [mem_sections-1:0] mem2_mbist_done
   );
 
     memory_model #(
-      .base_index(0),
+      .base_index(parallel_mems*mem_sections*0),
       .mem_len(fault_count),
       .parallel_mems(parallel_mems),
       .mem_sections(mem_sections),
@@ -78,11 +80,12 @@ module top_model
       .mbist_fault_addr(mem1_mbist_fault_addr),
       .mbist_fault_data(mem1_mbist_fault_data),
       .mbist_fault_dout(mem1_mbist_fault_dout),
-      .mbist_fault_expc(mem1_mbist_fault_expc)
+      .mbist_fault_expc(mem1_mbist_fault_expc),
+      .mbist_done(mem1_mbist_done)
     );
 
     memory_model #(
-      .base_index(parallel_mems*mem_sections),
+      .base_index(parallel_mems*mem_sections*1),
       .mem_len(fault_count),
       .parallel_mems(parallel_mems),
       .mem_sections(mem_sections),
@@ -113,7 +116,8 @@ module top_model
       .mbist_fault_addr(mem2_mbist_fault_addr),
       .mbist_fault_data(mem2_mbist_fault_data),
       .mbist_fault_dout(mem2_mbist_fault_dout),
-      .mbist_fault_expc(mem2_mbist_fault_expc)
+      .mbist_fault_expc(mem2_mbist_fault_expc),
+      .mbist_done(mem2_mbist_done)
     );
 
 endmodule

@@ -13,6 +13,7 @@ module testbench;
   localparam int dataW = 64;
 
   localparam int mem_addrW = addrW - $clog2(mem_sections);
+  localparam int mem_dataW = dataW/parallel_mems;
 
   integer          log_fd;
   reg              clk=1'b0;
@@ -34,21 +35,23 @@ module testbench;
   reg              mem2_re_n=1'b1;
   wire [dataW-1:0] mem2_dout;
 
-  reg              mem1_mbist_en=1'b0;
-  wire             mem1_mbist_fault;
-  wire       [4:0] mem1_mbist_fault_state;
-  wire [addrW-1:0] mem1_mbist_fault_addr;
-  wire [dataW-1:0] mem1_mbist_fault_data;
-  wire [dataW-1:0] mem1_mbist_fault_dout;
-  wire [dataW-1:0] mem1_mbist_fault_expc;
+  reg                        [mem_sections-1:0] mem1_mbist_en='0;
+  wire       [(mem_sections*parallel_mems)-1:0] mem1_mbist_fault;
+  wire     [(mem_sections*parallel_mems*5)-1:0] mem1_mbist_fault_state;
+  wire [(mem_sections*parallel_mems*addrW)-1:0] mem1_mbist_fault_addr;
+  wire               [(mem_sections*dataW)-1:0] mem1_mbist_fault_data;
+  wire               [(mem_sections*dataW)-1:0] mem1_mbist_fault_dout;
+  wire               [(mem_sections*dataW)-1:0] mem1_mbist_fault_expc;
+  wire                       [mem_sections-1:0] mem1_mbist_done;
 
-  reg              mem2_mbist_en=1'b0;
-  wire             mem2_mbist_fault;
-  wire       [4:0] mem2_mbist_fault_state;
-  wire [addrW-1:0] mem2_mbist_fault_addr;
-  wire [dataW-1:0] mem2_mbist_fault_data;
-  wire [dataW-1:0] mem2_mbist_fault_dout;
-  wire [dataW-1:0] mem2_mbist_fault_expc;
+  reg                        [mem_sections-1:0] mem2_mbist_en='0;
+  wire       [(mem_sections*parallel_mems)-1:0] mem2_mbist_fault;
+  wire     [(mem_sections*parallel_mems*5)-1:0] mem2_mbist_fault_state;
+  wire [(mem_sections*parallel_mems*addrW)-1:0] mem2_mbist_fault_addr;
+  wire               [(mem_sections*dataW)-1:0] mem2_mbist_fault_data;
+  wire               [(mem_sections*dataW)-1:0] mem2_mbist_fault_dout;
+  wire               [(mem_sections*dataW)-1:0] mem2_mbist_fault_expc;
+  wire                       [mem_sections-1:0] mem2_mbist_done;
   
   // Instantiate Units Under Test
   top_model #(
@@ -88,6 +91,7 @@ module testbench;
     .mem1_mbist_fault_data(mem1_mbist_fault_data),
     .mem1_mbist_fault_dout(mem1_mbist_fault_dout),
     .mem1_mbist_fault_expc(mem1_mbist_fault_expc),
+    .mem1_mbist_done(mem1_mbist_done),
     //MEM1 MBIST Interface
     .mem2_mbist_en(mem2_mbist_en),
     .mem2_mbist_fault(mem2_mbist_fault),
@@ -95,7 +99,8 @@ module testbench;
     .mem2_mbist_fault_addr(mem2_mbist_fault_addr),
     .mem2_mbist_fault_data(mem2_mbist_fault_data),
     .mem2_mbist_fault_dout(mem2_mbist_fault_dout),
-    .mem2_mbist_fault_expc(mem2_mbist_fault_expc)
+    .mem2_mbist_fault_expc(mem2_mbist_fault_expc),
+    .mem2_mbist_done(mem2_mbist_done)
   );
   
   
@@ -135,11 +140,11 @@ module testbench;
     #10 mem2_addr=0; mem2_re_n=1;
     #20 mem2_cs_n=1;
 
-    #20 mem1_mbist_en=1; mem2_mbist_en=1;
-    wait(MEM.MEM1.MBIST.mbist_state == 5'b00001); // wait for MBIST END state
-    #20 mem1_mbist_en=0;
-    wait(MEM.MEM2.MBIST.mbist_state == 5'b00001); // wait for MBIST END state
-    #20 mem2_mbist_en=0;
+    #20 mem1_mbist_en='1; mem2_mbist_en='1;
+    wait(mem1_mbist_done == '1); // wait for MBIST END state
+    #20 mem1_mbist_en='0;
+    wait(mem2_mbist_done == '1); // wait for MBIST END state
+    #20 mem2_mbist_en='0;
 
     #10000;
     $fdisplay(log_fd | 32'h1, "================================================================");
@@ -162,21 +167,66 @@ module testbench;
     $fflush(log_fd);
   end
 
-  always @(posedge mem1_mbist_fault) begin
-    #5;
-    if (mem1_mbist_fault == 1'b1) begin
-      $fdisplay(log_fd | 32'h1, "[MBIST1] t=%t | Fault at addr=0x%04h data=0x%08h state=0x%02h dout=0x%08h expc=0x%08h", $time, mem1_mbist_fault_addr + (0 << addrW), mem1_mbist_fault_data, mem1_mbist_fault_state, mem1_mbist_fault_dout, mem1_mbist_fault_expc);
-      $fflush(log_fd);
-    end
-  end
+  genvar x,y;
+  generate
+    for (x = 0; x < mem_sections*parallel_mems; x = x + 1) begin : fault_logging_mem1
+      wire [(addrW-mem_addrW)-1:0] fault_sect;
+      wire [addrW-1:0] fault_sect_addr;
 
-  always @(posedge mem2_mbist_fault) begin
-    #5;
-    if (mem2_mbist_fault == 1'b1) begin
-      $fdisplay(log_fd | 32'h1, "[MBIST2] t=%t | Fault at addr=0x%04h data=0x%08h state=0x%02h dout=0x%08h expc=0x%08h", $time, mem2_mbist_fault_addr + (1 << addrW), mem2_mbist_fault_data, mem2_mbist_fault_state, mem2_mbist_fault_dout, mem2_mbist_fault_expc);
-      $fflush(log_fd);
+      wire                 fault;
+      wire           [4:0] fault_state;
+      wire     [addrW-1:0] fault_addr;
+      wire [mem_dataW-1:0] fault_data;
+      wire [mem_dataW-1:0] fault_dout;
+      wire [mem_dataW-1:0] fault_expc;
+
+      assign fault_sect = x;
+      assign fault = mem1_mbist_fault[x];
+      assign fault_state = mem1_mbist_fault_state[(5*(x+1)-1):(5*x)];
+      assign fault_addr  = mem1_mbist_fault_addr[(addrW*(x+1)-1):(addrW*x)];
+      assign fault_data  = mem1_mbist_fault_data[(mem_dataW*(x+1)-1):(mem_dataW*x)];
+      assign fault_dout  = mem1_mbist_fault_dout[(mem_dataW*(x+1)-1):(mem_dataW*x)];
+      assign fault_expc  = mem1_mbist_fault_expc[(mem_dataW*(x+1)-1):(mem_dataW*x)];
+      assign fault_sect_addr = {fault_sect, fault_addr};
+
+      always @(posedge fault) begin
+        #5;
+        if (fault == 1'b1) begin
+          $fdisplay(log_fd | 32'h1, "[MBIST1-%02d] t=%t | Fault at addr=0x%04h data=0x%08h state=0x%02h dout=0x%08h expc=0x%08h", x, $time, fault_sect_addr + (0 << addrW), fault_data, fault_state, fault_dout, fault_expc);
+          $fflush(log_fd);
+        end
+      end
     end
-  end
+
+    for (y = 0; y < mem_sections*parallel_mems; y = y + 1) begin : fault_logging_mem2
+      wire [(addrW-mem_addrW)-1:0] fault_sect;
+      wire [addrW-1:0] fault_sect_addr;
+
+      wire                 fault;
+      wire           [4:0] fault_state;
+      wire [mem_addrW-1:0] fault_addr;
+      wire [mem_dataW-1:0] fault_data;
+      wire [mem_dataW-1:0] fault_dout;
+      wire [mem_dataW-1:0] fault_expc;
+
+      assign fault_sect = y;
+      assign fault = mem2_mbist_fault[y];
+      assign fault_state = mem2_mbist_fault_state[(5*(y+1)-1):(5*y)];
+      assign fault_addr  = mem2_mbist_fault_addr[(addrW*(y+1)-1):(addrW*y)];
+      assign fault_data  = mem2_mbist_fault_data[(mem_dataW*(y+1)-1):(mem_dataW*y)];
+      assign fault_dout  = mem2_mbist_fault_dout[(mem_dataW*(y+1)-1):(mem_dataW*y)];
+      assign fault_expc  = mem2_mbist_fault_expc[(mem_dataW*(y+1)-1):(mem_dataW*y)];
+      assign fault_sect_addr = {fault_sect, fault_addr}; 
+
+      always @(posedge fault) begin
+        #5;
+        if (fault == 1'b1) begin
+          $fdisplay(log_fd | 32'h1, "[MBIST2-%02d] t=%t | Fault at addr=0x%04h data=0x%08h state=0x%02h dout=0x%08h expc=0x%08h", y, $time, fault_sect_addr + (1 << addrW), fault_data, fault_state, fault_dout, fault_expc);
+          $fflush(log_fd);
+        end
+      end
+    end
+  endgenerate
 
   //Clock
   always

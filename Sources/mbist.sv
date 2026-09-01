@@ -1,40 +1,44 @@
 module mbist
   #(
-    parameter int addrW = 8,
-    parameter int dataW = 32
+    parameter int parallel_mems = 2,
+    parameter int mem_addrW = 10,
+    parameter int mem_dataW = 32,
+    parameter int addrW = 13,
+    parameter int dataW = 64
   ) (
     input  logic clk,
     input  logic nres,
     //MBIST Interface
-    input  logic             mbist_en,
-    output logic             mbist_sel,
-    output logic             mbist_fault,
-    output logic       [4:0] mbist_fault_state,
-    output logic [addrW-1:0] mbist_fault_addr,
-    output logic [dataW-1:0] mbist_fault_data,
-    output logic [dataW-1:0] mbist_fault_dout,
-    output logic [dataW-1:0] mbist_fault_expc,
+    input  logic                             mbist_en,
+    output logic                             mbist_sel,
+    output logic         [parallel_mems-1:0] mbist_fault,
+    output logic     [(parallel_mems*5)-1:0] mbist_fault_state,
+    output logic [(parallel_mems*addrW)-1:0] mbist_fault_addr,
+    output logic               [(dataW)-1:0] mbist_fault_data,
+    output logic               [(dataW)-1:0] mbist_fault_dout,
+    output logic               [(dataW)-1:0] mbist_fault_expc,
+    output logic                             mbist_done,
     //Memory Port
-    output logic             cs_n,
-    output logic [addrW-1:0] addr,
-    output logic             we_n,
-    output logic [dataW-1:0] bwe_n,
-    output logic [dataW-1:0] din,
-    output logic             re_n,
-    input  logic [dataW-1:0] dout
+    output logic                 cs_n,
+    output logic [mem_addrW-1:0] addr,
+    output logic                 we_n,
+    output logic     [dataW-1:0] bwe_n,
+    output logic     [dataW-1:0] din,
+    output logic                 re_n,
+    input  logic     [dataW-1:0] dout
   );
 
     //Registers
     reg       [4:0] mbist_state;
 
-    reg [addrW-1:0] mbist_addr;
-    reg [dataW-1:0] mbist_bwe_n;
+    reg [mem_addrW-1:0] mbist_addr;
+    reg [mem_dataW-1:0] mbist_bwe_n;
 
     reg             comp_en_d;
     reg       [4:0] mbist_state_d;
-    reg [addrW-1:0] mbist_addr_d;
-    reg [dataW-1:0] mbist_bwe_d;
-    reg [dataW-1:0] mbist_din_d;
+    reg [mem_addrW-1:0] mbist_addr_d;
+    reg [mem_dataW-1:0] mbist_bwe_d;
+    reg     [dataW-1:0] mbist_din_d;
 
 
     //Wires
@@ -43,12 +47,12 @@ module mbist
     logic       [1:0] addr_cnt;
     logic       [3:0] addr_ends;
 
-    logic             mbist_cs_n;
-    logic             mbist_we_n;
-    logic             mbist_re_n;
-    logic             data_in;
-    logic [dataW-1:0] mbist_din;
-    logic [dataW-1:0] mbist_dout;
+    logic                 mbist_cs_n;
+    logic                 mbist_we_n;
+    logic                 mbist_re_n;
+    logic                 data_in;
+    logic     [dataW-1:0] mbist_din;
+    logic     [dataW-1:0] mbist_dout;
 
     logic       [3:0] z_state;
     
@@ -57,15 +61,15 @@ module mbist
     assign cs_n = mbist_en ? mbist_cs_n : 1'b1;
     assign addr = mbist_en ? mbist_addr : '0;
     assign we_n = mbist_en ? mbist_we_n : 1'b1;
-    assign bwe_n = mbist_en ? mbist_bwe_n : '1;
     assign din = mbist_en ? mbist_din : '0;
     assign re_n = mbist_en ? mbist_re_n : 1'b1;
     assign mbist_dout = mbist_en ? dout : '0;
 
-    assign bwe_ends = {!mbist_bwe_n[dataW-1], !mbist_bwe_n[dataW-2], !mbist_bwe_n[1], !mbist_bwe_n[0]};
-    assign addr_ends = {mbist_addr == (2**addrW-1), mbist_addr == (2**addrW-2), mbist_addr == 1, mbist_addr == 0};
+    assign bwe_ends = {!mbist_bwe_n[mem_dataW-1], !mbist_bwe_n[mem_dataW-2], !mbist_bwe_n[1], !mbist_bwe_n[0]};
+    assign addr_ends = {mbist_addr == (2**mem_addrW-1), mbist_addr == (2**mem_addrW-2), mbist_addr == 1, mbist_addr == 0};
 
     assign mbist_sel = (mbist_state[4] == 1'b1) || ((mbist_state == 5'b01010) || (mbist_state == 5'b01100));
+    assign mbist_done = (mbist_state == 5'b00001);
 
     assign mbist_cs_n = mbist_sel ? 1'b0 : 1'b1;
     assign mbist_we_n = mbist_sel ? !mbist_state[1] : 1'b1;
@@ -74,12 +78,19 @@ module mbist
     assign data_in = mbist_sel ? mbist_state[0] : 1'b0;
     assign mbist_din = data_in ? '1 : '0;
 
-    assign mbist_fault = mbist_sel && comp_en_d && ((mbist_dout & ~mbist_bwe_d) != (mbist_din_d & ~mbist_bwe_d));
-    assign mbist_fault_state = mbist_fault ? mbist_state_d : '0;
-    assign mbist_fault_addr = mbist_fault ? mbist_addr_d : '0;
-    assign mbist_fault_data = mbist_fault ? ~mbist_bwe_d : '0;
-    assign mbist_fault_dout = mbist_fault ? mbist_dout : '0;
-    assign mbist_fault_expc = mbist_fault ? mbist_din_d : '0;
+    genvar x;
+    generate
+      for (x = 0; x < parallel_mems; x = x + 1) begin : parallel_control
+        assign bwe_n[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_en ? mbist_bwe_n : '1;
+
+        assign mbist_fault[x] = mbist_sel && comp_en_d && ((mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d) != (mbist_din_d[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d));
+        assign mbist_fault_state[(5*(x+1))-1:(5*x)]                = mbist_fault[x] ? mbist_state_d : '0;
+        assign mbist_fault_addr[(addrW*(x+1))-1:(addrW*x)] = mbist_fault[x] ? {8'h00, mbist_addr_d} : '0;
+        assign mbist_fault_data[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? ~mbist_bwe_d : '0;
+        assign mbist_fault_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] : '0;
+        assign mbist_fault_expc[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? mbist_din_d[(mem_dataW*(x+1))-1:(mem_dataW*x)] : '0;
+      end
+    endgenerate
 
     //Instances
 
@@ -108,15 +119,15 @@ module mbist
     begin
       if (nres == 0) begin
         mbist_bwe_n[0] <= 1'b0;
-        mbist_bwe_n[dataW-1:1] <= '1;
+        mbist_bwe_n[mem_dataW-1:1] <= '1;
       end else begin
         if (bwe_shift == 2'b11) begin
           mbist_bwe_n[0] <= 1'b0;
-          mbist_bwe_n[dataW-1:1] <= '1;
+          mbist_bwe_n[mem_dataW-1:1] <= '1;
         end else if (bwe_shift[0] == 1'b1) begin
-          mbist_bwe_n <= {mbist_bwe_n[dataW-2:0], mbist_bwe_n[dataW-1]};
+          mbist_bwe_n <= {mbist_bwe_n[mem_dataW-2:0], mbist_bwe_n[mem_dataW-1]};
         end else if (bwe_shift[1] == 1'b1) begin
-          mbist_bwe_n <= {mbist_bwe_n[0], mbist_bwe_n[dataW-1:1]};
+          mbist_bwe_n <= {mbist_bwe_n[0], mbist_bwe_n[mem_dataW-1:1]};
         end
       end
     end
