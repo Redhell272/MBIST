@@ -5,7 +5,7 @@ module testbench;
   localparam int random_seed = 42;
   localparam int parallel_mems = 2;
   localparam int mem_sections = 8;
-  localparam int fault_count = 128;
+  localparam int fault_count = 1024;
   localparam int disturb_count = 2;
   localparam int couple_count = 4;
   localparam int watch_depth = 3;
@@ -187,7 +187,7 @@ module testbench;
       assign fault_data  = mem1_mbist_fault_data[(mem_dataW*(x+1)-1):(mem_dataW*x)];
       assign fault_dout  = mem1_mbist_fault_dout[(mem_dataW*(x+1)-1):(mem_dataW*x)];
       assign fault_expc  = mem1_mbist_fault_expc[(mem_dataW*(x+1)-1):(mem_dataW*x)];
-      assign fault_sect_addr = {fault_sect, fault_addr};
+      assign fault_sect_addr = {fault_sect, fault_addr[mem_addrW-1:0]};
 
       always @(posedge fault) begin
         #5;
@@ -204,7 +204,7 @@ module testbench;
 
       wire                 fault;
       wire           [4:0] fault_state;
-      wire [mem_addrW-1:0] fault_addr;
+      wire     [addrW-1:0] fault_addr;
       wire [mem_dataW-1:0] fault_data;
       wire [mem_dataW-1:0] fault_dout;
       wire [mem_dataW-1:0] fault_expc;
@@ -216,7 +216,7 @@ module testbench;
       assign fault_data  = mem2_mbist_fault_data[(mem_dataW*(y+1)-1):(mem_dataW*y)];
       assign fault_dout  = mem2_mbist_fault_dout[(mem_dataW*(y+1)-1):(mem_dataW*y)];
       assign fault_expc  = mem2_mbist_fault_expc[(mem_dataW*(y+1)-1):(mem_dataW*y)];
-      assign fault_sect_addr = {fault_sect, fault_addr}; 
+      assign fault_sect_addr = {fault_sect, fault_addr[mem_addrW-1:0]};
 
       always @(posedge fault) begin
         #5;

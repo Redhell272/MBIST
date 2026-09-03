@@ -85,7 +85,7 @@ module mbist
 
         assign mbist_fault[x] = mbist_sel && comp_en_d && ((mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d) != (mbist_din_d[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d));
         assign mbist_fault_state[(5*(x+1))-1:(5*x)]                = mbist_fault[x] ? mbist_state_d : '0;
-        assign mbist_fault_addr[(addrW*(x+1))-1:(addrW*x)] = mbist_fault[x] ? {8'h00, mbist_addr_d} : '0;
+        assign mbist_fault_addr[(addrW*(x+1))-1:(addrW*x)] = mbist_fault[x] ? {{(addrW-mem_addrW){1'b0}}, mbist_addr_d} : '0;
         assign mbist_fault_data[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? ~mbist_bwe_d : '0;
         assign mbist_fault_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] : '0;
         assign mbist_fault_expc[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? mbist_din_d[(mem_dataW*(x+1))-1:(mem_dataW*x)] : '0;
