@@ -2,10 +2,11 @@
 //Test Logic Switch
 module testbench;
 
+  localparam int fault_count = 1024;
   localparam int random_seed = 42;
+  localparam int pipeline_stages = 1;
   localparam int parallel_mems = 2;
   localparam int mem_sections = 8;
-  localparam int fault_count = 1024;
   localparam int disturb_count = 2;
   localparam int couple_count = 4;
   localparam int watch_depth = 3;
@@ -55,6 +56,7 @@ module testbench;
   
   // Instantiate Units Under Test
   top_model #(
+      .pipeline_stages(pipeline_stages),
       .parallel_mems(parallel_mems),
       .mem_sections(mem_sections),
       .fault_count(fault_count),
