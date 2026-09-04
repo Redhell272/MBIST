@@ -1,5 +1,6 @@
 module mbist
   #(
+    parameter int base_index = 0,
     parameter int parallel_mems = 2,
     parameter int mem_addrW = 10,
     parameter int mem_dataW = 32,
@@ -29,32 +30,34 @@ module mbist
   );
 
     //Registers
-    reg       [4:0] mbist_state;
+    reg [4:0] mbist_state;
+    logic [3:0] z_state;
 
     reg [mem_addrW-1:0] mbist_addr;
     reg [mem_dataW-1:0] mbist_bwe_n;
 
-    reg             comp_en_d;
-    reg       [4:0] mbist_state_d;
+    reg                 comp_en_d;
+    reg           [4:0] mbist_state_d;
     reg [mem_addrW-1:0] mbist_addr_d;
     reg [mem_dataW-1:0] mbist_bwe_d;
     reg     [dataW-1:0] mbist_din_d;
 
 
     //Wires
-    logic       [1:0] bwe_shift;
-    logic       [3:0] bwe_ends;
-    logic       [1:0] addr_cnt;
-    logic       [3:0] addr_ends;
+    logic [1:0] bwe_shift;
+    logic [3:0] bwe_ends;
+    logic [1:0] addr_cnt;
+    logic [3:0] addr_ends;
 
-    logic                 mbist_cs_n;
-    logic                 mbist_we_n;
-    logic                 mbist_re_n;
-    logic                 data_in;
-    logic     [dataW-1:0] mbist_din;
-    logic     [dataW-1:0] mbist_dout;
+    logic             mbist_cs_n;
+    logic             mbist_we_n;
+    logic             mbist_re_n;
+    logic             data_in;
+    logic [dataW-1:0] mbist_din;
+    logic [dataW-1:0] mbist_dout;
+    
+    logic [(addrW - mem_addrW)-1:0] mbist_sect [parallel_mems-1:0];
 
-    logic       [3:0] z_state;
     
 
     //Assigns
@@ -82,10 +85,11 @@ module mbist
     generate
       for (x = 0; x < parallel_mems; x = x + 1) begin : parallel_control
         assign bwe_n[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_en ? mbist_bwe_n : '1;
+        assign mbist_sect[x] = (base_index + x) / parallel_mems;
 
         assign mbist_fault[x] = mbist_sel && comp_en_d && ((mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d) != (mbist_din_d[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d));
         assign mbist_fault_state[(5*(x+1))-1:(5*x)]                = mbist_fault[x] ? mbist_state_d : '0;
-        assign mbist_fault_addr[(addrW*(x+1))-1:(addrW*x)] = mbist_fault[x] ? {{(addrW-mem_addrW){1'b0}}, mbist_addr_d} : '0;
+        assign mbist_fault_addr[(addrW*(x+1))-1:(addrW*x)] = {mbist_sect[x], mbist_fault[x] ? mbist_addr_d : '0};
         assign mbist_fault_data[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? ~mbist_bwe_d : '0;
         assign mbist_fault_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] : '0;
         assign mbist_fault_expc[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? mbist_din_d[(mem_dataW*(x+1))-1:(mem_dataW*x)] : '0;
@@ -250,7 +254,7 @@ module mbist
     end
 
   //------------------------------ Combinational ----------------------------
-    always_comb begin
+    always @(*) begin
       if (mbist_sel) begin
           if (mbist_state == 5'b11010 && addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
             bwe_shift = 2'b00;

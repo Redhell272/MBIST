@@ -355,7 +355,7 @@ module fault_model
   //------------------------------ Combinational ----------------------------
 
     // Fault Primitive Action Decoder
-    always_comb begin
+    always @(*) begin
       case (fault_action)
 
         3'b000: begin // Stuck At Fault

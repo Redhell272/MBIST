@@ -83,6 +83,7 @@ module memory_model
         assign dout_array[x] = mbist_sel ? '0 : mem_dout;
 
         mbist #(
+          .base_index(base_index+parallel_mems*x),
           .parallel_mems(parallel_mems),
           .mem_addrW(mem_addrW),
           .mem_dataW(mem_dataW),
@@ -144,7 +145,7 @@ module memory_model
     endgenerate
 
     // Memory Section Output Mux
-    always_comb begin
+    always @(*) begin
       sect_dout = '0;
       for (int i = 0; i < mem_sections; i++) begin
         if (addr[addrW-1:mem_addrW] == i)

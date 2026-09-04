@@ -203,13 +203,16 @@ for fault in faults:
 # Match the faults found by the MBIST with the faults
 mismatches = []
 for text in text_array[5 + n_faults:-3]:
+    sect = int(text[0].split("-")[1].split("]")[0])
     addr = int(text[6].split("=")[1], 16)
     bit = int(text[7].split("=")[1], 16)
-    if bit != 0:
-        bit = bit.bit_length() - 1
+    if bit != 0: bit = bit.bit_length() - 1
     state = int(text[8].split("=")[1], 16)
     dout = (int(text[9].split("=")[1], 16) >> bit) & 0x01
     expc = (int(text[10].split("=")[1], 16) >> bit) & 0x01
+
+    bit_offset = sect % parallel_mems
+    bit = bit + (bit_offset * mem_dataW)
 
     found = False
     for i in range(n_faults):
