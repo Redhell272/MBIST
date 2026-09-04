@@ -9,10 +9,11 @@ def bitmask(w):
     return (1 << w) - 1
 
 def near_addr(R, addr, mem_dataW, mem_addrW):
-    addrBitmask = bitmask(math.ceil(math.log2(mem_addrW)))
+    bit = addr >> mem_addrW
+    addr = addr & bitmask(mem_addrW)
     ns = 0
     ew = 0
-    while(((ns == 0) and (ew == 0)) or (((addr + ns) & addrBitmask) >= 2*mem_addrW) or (((addr + ns) & addrBitmask) < 0) or ((addr >> mem_addrW) + ns >= mem_dataW) or ((addr >> mem_addrW) + ns < 0)):
+    while(((ns == 0) and (ew == 0)) or ((addr + ns) >= 2*mem_addrW) or ((addr + ns) < 0) or ((bit + ew) >= mem_dataW) or ((bit + ew) < 0)):
         ns = R.randint(0, 11)
         ew = R.randint(0, 11)
 
@@ -38,7 +39,7 @@ def near_addr(R, addr, mem_dataW, mem_addrW):
         else: #ew == 11
             ew = 2
 
-    return addr + ns + (ew << addrW)
+    return (bit + ew) << mem_addrW | ((addr + ns) & bitmask(mem_addrW))
 
 def pattern_addr(R, addr, couple_count, mem_dataW, mem_addrW):
     pattern = []
