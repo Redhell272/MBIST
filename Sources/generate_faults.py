@@ -8,11 +8,11 @@ import sys
 def bitmask(w):
     return (1 << w) - 1
 
-def near_addr(R, addr, mem_dataW, dataW, mem_addrW):
-    dataBitmask = bitmask(math.ceil(math.log2(mem_dataW)))
+def near_addr(R, addr, mem_dataW, mem_addrW):
+    addrBitmask = bitmask(math.ceil(math.log2(mem_addrW)))
     ns = 0
     ew = 0
-    while(((ns == 0) and (ew == 0)) or ((addr & dataBitmask) + ew >= mem_dataW) or ((addr & dataBitmask) + ew < 0) or ((addr // dataW) + ns >= 2**mem_addrW) or ((addr // dataW) + ns < 0)):
+    while(((ns == 0) and (ew == 0)) or (((addr + ns) & addrBitmask) >= 2*mem_addrW) or (((addr + ns) & addrBitmask) < 0) or ((addr >> mem_addrW) + ns >= mem_dataW) or ((addr >> mem_addrW) + ns < 0)):
         ns = R.randint(0, 11)
         ew = R.randint(0, 11)
 
@@ -38,37 +38,37 @@ def near_addr(R, addr, mem_dataW, dataW, mem_addrW):
         else: #ew == 11
             ew = 2
 
-    return addr + ns * dataW + ew
+    return addr + ns + (ew << addrW)
 
-def pattern_addr(R, addr, couple_count, mem_dataW, dataW, mem_addrW):
+def pattern_addr(R, addr, couple_count, mem_dataW, mem_addrW):
     pattern = []
     for i in range(couple_count):
         while True:
-            new_addr = near_addr(R, addr, mem_dataW, dataW, mem_addrW)
+            new_addr = near_addr(R, addr, mem_dataW, mem_addrW)
             if new_addr not in pattern:
                 pattern.append(new_addr)
                 break
     return pattern
 
-def column_addr(addr, couple_count, dataW, mem_addrW):
+def column_addr(addr, couple_count, mem_addrW):
     column = []
-    row = addr // dataW
+    row = addr & bitmask(mem_addrW)
     for i in range(couple_count):
         upDown = i & 0x01
         amount = (i >> 1) + 1
         change = -amount if upDown == 0 else amount
         if upDown == 0:
             if row + change > 0:
-                column.append(addr + change * dataW)
+                column.append(addr + change)
             else:
                 change = -change + (couple_count // 2)
-                column.append(addr + change * dataW)
+                column.append(addr + change)
         elif upDown == 1:
             if row + change < 2**mem_addrW:
-                column.append(addr + change * dataW)
+                column.append(addr + change)
             else:
                 change = -change - (couple_count // 2)
-                column.append(addr + change * dataW)
+                column.append(addr + change)
     return column
 
 
@@ -206,7 +206,7 @@ for i, b in enumerate(base):
         label = "   LRF"
         primitive = 0b100
         pattern_bit = [~prim_rand & 0x01 for _ in range(couple_count)]
-        pattern_coupling = column_addr(addr[i], couple_count, dataW, mem_addrW)
+        pattern_coupling = column_addr(addr[i], couple_count, mem_addrW)
 
     elif b < 845: #D1X - 4%
         label = "   D1X"
@@ -223,17 +223,17 @@ for i, b in enumerate(base):
         label = "SNPSFk"
         primitive = 0b000
         pattern_bit = [R.randint(0, 1) for _ in range(couple_count)]
-        pattern_coupling = pattern_addr(R, addr[i], couple_count, mem_dataW, dataW, mem_addrW)
+        pattern_coupling = pattern_addr(R, addr[i], couple_count, mem_dataW, mem_addrW)
     elif b < 885: #PNPSFk - 1%
         label = "PNPSFk"
         primitive = 0b010
         pattern_bit = [R.randint(0, 1) for _ in range(couple_count)]
-        pattern_coupling = pattern_addr(R, addr[i], couple_count, mem_dataW, dataW, mem_addrW)
+        pattern_coupling = pattern_addr(R, addr[i], couple_count, mem_dataW, mem_addrW)
     elif b < 890: #ANPSFk - 0.5%
         label = "ANPSFk"
         primitive = 0b100
         pattern_bit = [R.randint(2, 3) for _ in range(couple_count)]
-        pattern_disturb = pattern_addr(R, addr[i], disturb_count, mem_dataW, dataW, mem_addrW)
+        pattern_disturb = pattern_addr(R, addr[i], disturb_count, mem_dataW, mem_addrW)
 
     elif b < 940: #ADF - 5%
         label = "   ADF"
@@ -241,7 +241,7 @@ for i, b in enumerate(base):
     elif b < 970: #ADOF - 3%
         label = "  ADOF"
         primitive = 0b100
-        disturb[0][0] = near_addr(R, addr[i], mem_dataW, dataW, mem_addrW)
+        disturb[0][0] = near_addr(R, addr[i], mem_dataW, mem_addrW)
         disturb[0][1] = 1
         disturb[0][2] = R.randint(2, 3)
 
@@ -253,7 +253,7 @@ for i, b in enumerate(base):
     elif b < 1000: #d2cIRF - 1%
         label = "d2cIRF"
         primitive = 0b110
-        disturb[0][0] = near_addr(R, addr[i], mem_dataW, dataW, mem_addrW)
+        disturb[0][0] = near_addr(R, addr[i], mem_dataW, mem_addrW)
         disturb[0][1] = 1
         disturb[0][2] = R.randint(0, 1)
 
@@ -263,14 +263,14 @@ for i, b in enumerate(base):
         if near_coupling > ii and couple_count > 0:
             couple[ii][0] = 1
             couple[ii][1] = R.randint(0, 1)
-            couple[ii][2] = near_addr(R, addr[i], mem_dataW, dataW, mem_addrW)
+            couple[ii][2] = near_addr(R, addr[i], mem_dataW, mem_addrW)
 
     near_disturb = 2 if near_disturb == 8 else 1 if near_disturb > 0 else 0
     for ii in range(disturb_count):
         if near_disturb > ii and disturb_count > 0:
             depth = R.randint(1, 8)
             depth = 2 if depth == 8 else 1
-            disturb[ii][0] = near_addr(R, addr[i], mem_dataW, dataW, mem_addrW)
+            disturb[ii][0] = near_addr(R, addr[i], mem_dataW, mem_addrW)
             disturb[ii][1] = depth
             disturb[ii][2] = R.randint(0, (4**depth)-1)
 
