@@ -39,17 +39,17 @@ module sram
 
   `else  // synthesis: SRAM macro
 
-    logic macro_csb0;
-    assign macro_csb0 = cs_n || (we_n && re_n);
+    logic [3:0] wmask;
+    assign wmask = {!(&bwe_n[31:24]), !(&bwe_n[23:16]), !(&bwe_n[15:8]), !(&bwe_n[7:0])};
     
     logic [31:0] unused_dout1;
 
     sky130_sram_4kbyte_1rw1r_32x1024_8 sram_macro (
         // Port 0 (Active - Fully mapped to wrapper pins)
         .clk0   (clk),
-        .csb0   (macro_csb0),
+        .csb0   (cs_n),
         .web0   (we_n),
-        .wmask0 (bwe_n), 
+        .wmask0 (wmask), 
         .addr0  (addr),
         .din0   (din),
         .dout0  (dout),
