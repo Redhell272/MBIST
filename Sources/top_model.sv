@@ -1,6 +1,6 @@
 module top_model
   #(
-    parameter int pipeline_stages = 2,  //Number of pipeline stages in input/output signal paths, for decreased routing pressure
+    parameter int pipeline_stages = 1,  //Number of pipeline stages in input/output signal paths, for decreased routing pressure
     parameter int parallel_mems = 2,    //GOTO: /memory_model
     parameter int mem_sections = 8,     //GOTO: /memory_model
     parameter int fault_count = 64,     //GOTO: /faults_database
