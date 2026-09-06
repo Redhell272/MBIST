@@ -66,7 +66,9 @@ module testbench;
       .addrW(addrW),
       .dataW(dataW)
     ) MEM (
+    `ifndef SYNTHESIS
     .log_fd(log_fd),
+    `endif
     .clk(clk),
     .nres(nres),
     //Mem1 Memory Port
@@ -159,10 +161,12 @@ module testbench;
 
   initial begin
     @(posedge nres);
+    `ifndef SYNTHESIS
     $fdisplay(log_fd | 32'h1, "================================================================");
     $fdisplay(log_fd | 32'h1, "[Fault Injection] %0d Faults Injected:", fault_count);
     @(posedge clk);
     @(negedge clk);
+    `endif
     $fdisplay(log_fd | 32'h1, "================================================================");
     $fdisplay(log_fd | 32'h1, "Starting Simulation...");
     $fdisplay(log_fd | 32'h1, "================================================================");

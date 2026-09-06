@@ -10,7 +10,9 @@ module fault_injection_wrapper
     parameter int addrW = 8,
     parameter int dataW = 32
   ) (
+    `ifndef SYNTHESIS
     input  integer log_fd,
+    `endif
     input  logic clk,
     input  logic nres,
     //Memory Port

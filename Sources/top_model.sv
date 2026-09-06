@@ -10,7 +10,9 @@ module top_model
     parameter int addrW = 13,
     parameter int dataW = 64
   ) (
+    `ifndef SYNTHESIS
     input  integer log_fd,
+    `endif
     input  logic clk,
     input  logic nres,
     //MEM1 Memory Port
@@ -132,7 +134,9 @@ module top_model
       .addrW(addrW),
       .dataW(dataW)
     ) MEM1 (
+      `ifndef SYNTHESIS
       .log_fd(log_fd),
+      `endif
       .clk(clk),
       .nres(nres),
       //Memory Port
@@ -168,7 +172,9 @@ module top_model
       .addrW(addrW),
       .dataW(dataW)
     ) MEM2 (
+      `ifndef SYNTHESIS
       .log_fd(log_fd),
+      `endif
       .clk(clk),
       .nres(nres),
       //Memory Port

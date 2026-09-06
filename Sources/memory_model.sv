@@ -11,7 +11,9 @@ module memory_model
     parameter int addrW = 13,
     parameter int dataW = 64
   ) (
+    `ifndef SYNTHESIS
     input  integer log_fd,
+    `endif
     input  logic clk,
     input  logic nres,
     //Memory Port
@@ -126,7 +128,9 @@ module memory_model
             .addrW(mem_addrW),
             .dataW(mem_dataW)
           ) MEM (
+            `ifndef SYNTHESIS
             .log_fd(log_fd),
+            `endif
             .clk(clk),
             .nres(nres),
             //Memory Port
