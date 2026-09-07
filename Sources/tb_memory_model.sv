@@ -4,7 +4,7 @@ module testbench;
 
   localparam int fault_count = 1024;
   localparam int random_seed = 42;
-  localparam int pipeline_stages = 1;
+  localparam int pipeline_stages = 0;
   localparam int parallel_mems = 2;
   localparam int mem_sections = 8;
   localparam int disturb_count = 2;
