@@ -87,6 +87,7 @@ module top_model
     logic                       [mem_sections-1:0] mem2_mbist_done_d;
 
     localparam int pl = pipeline_stages;
+
     //MEM1 Memory Port
     ppln #(.s(pl), .w(1))      mem1_cs_n_ppln  (.c(clk), .n(nres), .i(mem1_cs_n),  .o(mem1_cs_n_d),  .r('1));
     ppln #(.s(pl), .w(addrW))  mem1_addr_ppln  (.c(clk), .n(nres), .i(mem1_addr),  .o(mem1_addr_d),  .r('0));
@@ -95,14 +96,6 @@ module top_model
     ppln #(.s(pl), .w(dataW))  mem1_din_ppln   (.c(clk), .n(nres), .i(mem1_din),   .o(mem1_din_d),   .r('0));
     ppln #(.s(pl), .w(1))      mem1_re_n_ppln  (.c(clk), .n(nres), .i(mem1_re_n),  .o(mem1_re_n_d),  .r('1));
     ppln #(.s(pl), .w(dataW))  mem1_dout_ppln  (.c(clk), .n(nres), .i(mem1_dout_d),  .o(mem1_dout),  .r('0));
-    //MEM2 Memory Port
-    ppln #(.s(pl), .w(1))      mem2_cs_n_ppln  (.c(clk), .n(nres), .i(mem2_cs_n),  .o(mem2_cs_n_d),  .r('1));
-    ppln #(.s(pl), .w(addrW))  mem2_addr_ppln  (.c(clk), .n(nres), .i(mem2_addr),  .o(mem2_addr_d),  .r('0));
-    ppln #(.s(pl), .w(1))      mem2_we_n_ppln  (.c(clk), .n(nres), .i(mem2_we_n),  .o(mem2_we_n_d),  .r('1));
-    ppln #(.s(pl), .w(dataW))  mem2_bwe_n_ppln (.c(clk), .n(nres), .i(mem2_bwe_n), .o(mem2_bwe_n_d), .r('1));
-    ppln #(.s(pl), .w(dataW))  mem2_din_ppln   (.c(clk), .n(nres), .i(mem2_din),   .o(mem2_din_d),   .r('0));
-    ppln #(.s(pl), .w(1))      mem2_re_n_ppln  (.c(clk), .n(nres), .i(mem2_re_n),  .o(mem2_re_n_d),  .r('1));
-    ppln #(.s(pl), .w(dataW))  mem2_dout_ppln  (.c(clk), .n(nres), .i(mem2_dout_d),  .o(mem2_dout),  .r('0));
     //MEM1 MBIST Interface
     ppln #(.s(pl), .w(mem_sections))                      mem1_mbist_en_ppln          (.c(clk), .n(nres), .i(mem1_mbist_en),            .o(mem1_mbist_en_d),        .r('0));
     ppln #(.s(pl), .w(mem_sections*parallel_mems))        mem1_mbist_fault_ppln       (.c(clk), .n(nres), .i(mem1_mbist_fault_d),       .o(mem1_mbist_fault),       .r('0));
@@ -112,16 +105,8 @@ module top_model
     ppln #(.s(pl), .w(mem_sections*dataW))                mem1_mbist_fault_dout_ppln  (.c(clk), .n(nres), .i(mem1_mbist_fault_dout_d),  .o(mem1_mbist_fault_dout),  .r('0));
     ppln #(.s(pl), .w(mem_sections*dataW))                mem1_mbist_fault_expc_ppln  (.c(clk), .n(nres), .i(mem1_mbist_fault_expc_d),  .o(mem1_mbist_fault_expc),  .r('0));
     ppln #(.s(pl), .w(mem_sections))                      mem1_mbist_done_ppln        (.c(clk), .n(nres), .i(mem1_mbist_done_d),        .o(mem1_mbist_done),        .r('0));
-    //MEM2 MBIST Interface
-    ppln #(.s(pl), .w(mem_sections))                      mem2_mbist_en_ppln          (.c(clk), .n(nres), .i(mem2_mbist_en),            .o(mem2_mbist_en_d),        .r('0));
-    ppln #(.s(pl), .w(mem_sections*parallel_mems))        mem2_mbist_fault_ppln       (.c(clk), .n(nres), .i(mem2_mbist_fault_d),       .o(mem2_mbist_fault),       .r('0));
-    ppln #(.s(pl), .w(mem_sections*parallel_mems*5))      mem2_mbist_fault_state_ppln (.c(clk), .n(nres), .i(mem2_mbist_fault_state_d), .o(mem2_mbist_fault_state), .r('0));
-    ppln #(.s(pl), .w(mem_sections*parallel_mems*addrW))  mem2_mbist_fault_addr_ppln  (.c(clk), .n(nres), .i(mem2_mbist_fault_addr_d),  .o(mem2_mbist_fault_addr),  .r('0));
-    ppln #(.s(pl), .w(mem_sections*dataW))                mem2_mbist_fault_data_ppln  (.c(clk), .n(nres), .i(mem2_mbist_fault_data_d),  .o(mem2_mbist_fault_data),  .r('0));
-    ppln #(.s(pl), .w(mem_sections*dataW))                mem2_mbist_fault_dout_ppln  (.c(clk), .n(nres), .i(mem2_mbist_fault_dout_d),  .o(mem2_mbist_fault_dout),  .r('0));
-    ppln #(.s(pl), .w(mem_sections*dataW))                mem2_mbist_fault_expc_ppln  (.c(clk), .n(nres), .i(mem2_mbist_fault_expc_d),  .o(mem2_mbist_fault_expc),  .r('0));
-    ppln #(.s(pl), .w(mem_sections))                      mem2_mbist_done_ppln        (.c(clk), .n(nres), .i(mem2_mbist_done_d),        .o(mem2_mbist_done),        .r('0));
 
+    //MEM1 Instance
     memory_model #(
       .base_index(parallel_mems*mem_sections*0),
       .mem_len(fault_count),
@@ -160,6 +145,25 @@ module top_model
       .mbist_done(mem1_mbist_done_d)
     );
 
+    //MEM2 Memory Port
+    ppln #(.s(pl), .w(1))      mem2_cs_n_ppln  (.c(clk), .n(nres), .i(mem2_cs_n),  .o(mem2_cs_n_d),  .r('1));
+    ppln #(.s(pl), .w(addrW))  mem2_addr_ppln  (.c(clk), .n(nres), .i(mem2_addr),  .o(mem2_addr_d),  .r('0));
+    ppln #(.s(pl), .w(1))      mem2_we_n_ppln  (.c(clk), .n(nres), .i(mem2_we_n),  .o(mem2_we_n_d),  .r('1));
+    ppln #(.s(pl), .w(dataW))  mem2_bwe_n_ppln (.c(clk), .n(nres), .i(mem2_bwe_n), .o(mem2_bwe_n_d), .r('1));
+    ppln #(.s(pl), .w(dataW))  mem2_din_ppln   (.c(clk), .n(nres), .i(mem2_din),   .o(mem2_din_d),   .r('0));
+    ppln #(.s(pl), .w(1))      mem2_re_n_ppln  (.c(clk), .n(nres), .i(mem2_re_n),  .o(mem2_re_n_d),  .r('1));
+    ppln #(.s(pl), .w(dataW))  mem2_dout_ppln  (.c(clk), .n(nres), .i(mem2_dout_d),  .o(mem2_dout),  .r('0));
+    //MEM2 MBIST Interface
+    ppln #(.s(pl), .w(mem_sections))                      mem2_mbist_en_ppln          (.c(clk), .n(nres), .i(mem2_mbist_en),            .o(mem2_mbist_en_d),        .r('0));
+    ppln #(.s(pl), .w(mem_sections*parallel_mems))        mem2_mbist_fault_ppln       (.c(clk), .n(nres), .i(mem2_mbist_fault_d),       .o(mem2_mbist_fault),       .r('0));
+    ppln #(.s(pl), .w(mem_sections*parallel_mems*5))      mem2_mbist_fault_state_ppln (.c(clk), .n(nres), .i(mem2_mbist_fault_state_d), .o(mem2_mbist_fault_state), .r('0));
+    ppln #(.s(pl), .w(mem_sections*parallel_mems*addrW))  mem2_mbist_fault_addr_ppln  (.c(clk), .n(nres), .i(mem2_mbist_fault_addr_d),  .o(mem2_mbist_fault_addr),  .r('0));
+    ppln #(.s(pl), .w(mem_sections*dataW))                mem2_mbist_fault_data_ppln  (.c(clk), .n(nres), .i(mem2_mbist_fault_data_d),  .o(mem2_mbist_fault_data),  .r('0));
+    ppln #(.s(pl), .w(mem_sections*dataW))                mem2_mbist_fault_dout_ppln  (.c(clk), .n(nres), .i(mem2_mbist_fault_dout_d),  .o(mem2_mbist_fault_dout),  .r('0));
+    ppln #(.s(pl), .w(mem_sections*dataW))                mem2_mbist_fault_expc_ppln  (.c(clk), .n(nres), .i(mem2_mbist_fault_expc_d),  .o(mem2_mbist_fault_expc),  .r('0));
+    ppln #(.s(pl), .w(mem_sections))                      mem2_mbist_done_ppln        (.c(clk), .n(nres), .i(mem2_mbist_done_d),        .o(mem2_mbist_done),        .r('0));
+
+    //MEM2 Instance
     memory_model #(
       .base_index(parallel_mems*mem_sections*1),
       .mem_len(fault_count),
