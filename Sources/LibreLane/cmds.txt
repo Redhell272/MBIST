@@ -2,6 +2,6 @@ clear
 rm -rf ~/my_designs/MBIST/Sources/LibreLane/runs
 librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --skip KLayout.Render --skip KLayout.DRC --skip Magic.DRC --skip Checker.XOR --skip Checker.SetupViolations --skip Checker.MaxSlewViolations
 
-librelane --last-run --flow openinklayout ~/my_designs/MBIST/Sources/LibreLane/config.json
+librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --flow openinklayout
 -or-
-librelane --last-run --flow openinopenroad ~/my_designs/MBIST/Sources/LibreLane/config.json
+librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --flow OpenInOpenROAD
