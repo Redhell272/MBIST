@@ -38,7 +38,7 @@ module testbench;
 
   reg                        [mem_sections-1:0] mem1_mbist_en='0;
   wire       [(mem_sections*parallel_mems)-1:0] mem1_mbist_fault;
-  wire     [(mem_sections*parallel_mems*5)-1:0] mem1_mbist_fault_state;
+  wire     [(mem_sections*parallel_mems*8)-1:0] mem1_mbist_fault_state;
   wire [(mem_sections*parallel_mems*addrW)-1:0] mem1_mbist_fault_addr;
   wire               [(mem_sections*dataW)-1:0] mem1_mbist_fault_data;
   wire               [(mem_sections*dataW)-1:0] mem1_mbist_fault_dout;
@@ -47,7 +47,7 @@ module testbench;
 
   reg                        [mem_sections-1:0] mem2_mbist_en='0;
   wire       [(mem_sections*parallel_mems)-1:0] mem2_mbist_fault;
-  wire     [(mem_sections*parallel_mems*5)-1:0] mem2_mbist_fault_state;
+  wire     [(mem_sections*parallel_mems*8)-1:0] mem2_mbist_fault_state;
   wire [(mem_sections*parallel_mems*addrW)-1:0] mem2_mbist_fault_addr;
   wire               [(mem_sections*dataW)-1:0] mem2_mbist_fault_data;
   wire               [(mem_sections*dataW)-1:0] mem2_mbist_fault_dout;
@@ -178,14 +178,14 @@ module testbench;
     for (x = 0; x < mem_sections*parallel_mems; x = x + 1) begin : fault_logging_mem1
 
       wire                 fault;
-      wire           [4:0] fault_state;
+      wire           [7:0] fault_state;
       wire     [addrW-1:0] fault_addr;
       wire [mem_dataW-1:0] fault_data;
       wire [mem_dataW-1:0] fault_dout;
       wire [mem_dataW-1:0] fault_expc;
 
       assign fault = mem1_mbist_fault[x];
-      assign fault_state = mem1_mbist_fault_state[(5*(x+1)-1):(5*x)];
+      assign fault_state = mem1_mbist_fault_state[(8*(x+1)-1):(8*x)];
       assign fault_addr  = mem1_mbist_fault_addr[(addrW*(x+1)-1):(addrW*x)];
       assign fault_data  = mem1_mbist_fault_data[(mem_dataW*(x+1)-1):(mem_dataW*x)];
       assign fault_dout  = mem1_mbist_fault_dout[(mem_dataW*(x+1)-1):(mem_dataW*x)];
@@ -203,14 +203,14 @@ module testbench;
     for (y = 0; y < mem_sections*parallel_mems; y = y + 1) begin : fault_logging_mem2
 
       wire                 fault;
-      wire           [4:0] fault_state;
+      wire           [7:0] fault_state;
       wire     [addrW-1:0] fault_addr;
       wire [mem_dataW-1:0] fault_data;
       wire [mem_dataW-1:0] fault_dout;
       wire [mem_dataW-1:0] fault_expc;
 
       assign fault = mem2_mbist_fault[y];
-      assign fault_state = mem2_mbist_fault_state[(5*(y+1)-1):(5*y)];
+      assign fault_state = mem2_mbist_fault_state[(8*(y+1)-1):(8*y)];
       assign fault_addr  = mem2_mbist_fault_addr[(addrW*(y+1)-1):(addrW*y)];
       assign fault_data  = mem2_mbist_fault_data[(mem_dataW*(y+1)-1):(mem_dataW*y)];
       assign fault_dout  = mem2_mbist_fault_dout[(mem_dataW*(y+1)-1):(mem_dataW*y)];

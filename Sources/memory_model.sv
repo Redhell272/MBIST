@@ -29,7 +29,7 @@ module memory_model
     //MBIST Interface
     input  logic                       [mem_sections-1:0] mbist_en,
     output logic       [(mem_sections*parallel_mems)-1:0] mbist_fault,
-    output logic     [(mem_sections*parallel_mems*5)-1:0] mbist_fault_state,
+    output logic     [(mem_sections*parallel_mems*8)-1:0] mbist_fault_state,
     output logic [(mem_sections*parallel_mems*addrW)-1:0] mbist_fault_addr,
     output logic               [(mem_sections*dataW)-1:0] mbist_fault_data,
     output logic               [(mem_sections*dataW)-1:0] mbist_fault_dout,
@@ -98,7 +98,7 @@ module memory_model
           .mbist_en(mbist_en[x]),
           .mbist_sel(mbist_sel),
           .mbist_fault(mbist_fault[                (parallel_mems*(x+1))-1:(parallel_mems*x)]),
-          .mbist_fault_state(mbist_fault_state[  (parallel_mems*5*(x+1))-1:(parallel_mems*5*x)]),
+          .mbist_fault_state(mbist_fault_state[  (parallel_mems*8*(x+1))-1:(parallel_mems*8*x)]),
           .mbist_fault_addr(mbist_fault_addr[(parallel_mems*addrW*(x+1))-1:(parallel_mems*addrW*x)]),
           .mbist_fault_data(mbist_fault_data[              (dataW*(x+1))-1:(dataW*x)]),
           .mbist_fault_dout(mbist_fault_dout[              (dataW*(x+1))-1:(dataW*x)]),

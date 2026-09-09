@@ -13,7 +13,7 @@ module mbist
     input  logic                             mbist_en,
     output logic                             mbist_sel,
     output logic         [parallel_mems-1:0] mbist_fault,
-    output logic     [(parallel_mems*5)-1:0] mbist_fault_state,
+    output logic     [(parallel_mems*8)-1:0] mbist_fault_state,
     output logic [(parallel_mems*addrW)-1:0] mbist_fault_addr,
     output logic               [(dataW)-1:0] mbist_fault_data,
     output logic               [(dataW)-1:0] mbist_fault_dout,
@@ -30,24 +30,28 @@ module mbist
   );
 
     //Registers
-    reg [4:0] mbist_state;
-    logic [3:0] z_state;
+    reg [7:0] mbist_state;
 
     reg [mem_addrW-1:0] mbist_addr;
     reg [mem_dataW-1:0] mbist_bwe_n;
 
     reg                 comp_en_d;
-    reg           [4:0] mbist_state_d;
+    reg           [7:0] mbist_state_d;
     reg [mem_addrW-1:0] mbist_addr_d;
     reg [mem_dataW-1:0] mbist_bwe_d;
     reg     [dataW-1:0] mbist_din_d;
 
 
     //Wires
+    logic [1:0] transition_state;
+    logic [3:0] z_state;
+
     logic [1:0] bwe_shift;
     logic [3:0] bwe_ends;
     logic [1:0] addr_cnt;
     logic [3:0] addr_ends;
+    logic       up_end;
+    logic       down_end;
 
     logic             mbist_cs_n;
     logic             mbist_we_n;
@@ -70,9 +74,11 @@ module mbist
 
     assign bwe_ends = {!mbist_bwe_n[mem_dataW-1], !mbist_bwe_n[mem_dataW-2], !mbist_bwe_n[1], !mbist_bwe_n[0]};
     assign addr_ends = {mbist_addr == (2**mem_addrW-1), mbist_addr == (2**mem_addrW-2), mbist_addr == 1, mbist_addr == 0};
+    assign up_end = addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1;
+    assign down_end = addr_ends[0] == 1'b1 && bwe_ends[0] == 1'b1;
 
-    assign mbist_sel = (mbist_state[4] == 1'b1) || ((mbist_state == 5'b01010) || (mbist_state == 5'b01100));
-    assign mbist_done = (mbist_state == 5'b00001);
+    assign mbist_sel = mbist_state[7] == 1'b1;
+    assign mbist_done = mbist_state == 8'h01;
 
     assign mbist_cs_n = mbist_sel ? 1'b0 : 1'b1;
     assign mbist_we_n = mbist_sel ? !mbist_state[1] : 1'b1;
@@ -88,7 +94,7 @@ module mbist
         assign mbist_sect[x] = (base_index + x) / parallel_mems;
 
         assign mbist_fault[x] = mbist_sel && comp_en_d && ((mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d) != (mbist_din_d[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d));
-        assign mbist_fault_state[(5*(x+1))-1:(5*x)]                = mbist_fault[x] ? mbist_state_d : '0;
+        assign mbist_fault_state[(8*(x+1))-1:(8*x)] = mbist_fault[x] ? mbist_state_d : '0;
         assign mbist_fault_addr[(addrW*(x+1))-1:(addrW*x)] = {mbist_sect[x], mbist_fault[x] ? mbist_addr_d : '0};
         assign mbist_fault_data[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? ~mbist_bwe_d : '0;
         assign mbist_fault_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] : '0;
@@ -154,109 +160,135 @@ module mbist
     // MBIST State Machine
     always @(posedge clk or negedge nres) begin
       if (nres == 0) begin
-        mbist_state <= 5'b00000;
+        mbist_state <= 8'h00;
       end else begin
         case (mbist_state)
 
-        // Bits: {outer / main body, dont / do count, up / down count, r / w operation, 0 / 1 bit}
+        // Bits: {dont / do sel, 3x identifier bits, dont / do count, up / down count, r / w operation, 0 / 1 bit}
 
-          5'b00000: begin // Idle
-            if (mbist_en == 1'b1) mbist_state <= 5'b01010;
+          8'h00: begin // Idle
+            if (mbist_en == 1'b1) mbist_state <= 8'b10001010;
           end
 
-          5'b01010: begin // M0.1 - up w0
-            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
-            else if (addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
-              mbist_state <= 5'b10000;
+          8'b10001010: begin // M0.1 - up w0
+            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            else if (up_end == 1'b1) begin
+              mbist_state <= 8'b10010000;
             end
           end
 
-          5'b10000: begin // M1.1 - up r0
-            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
+          8'b10010000: begin // M1.1 - up r0
+            if (mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
-              mbist_state <= 5'b11011;
+              mbist_state <= 8'b10011011;
             end
           end
 
-          5'b11011: begin // M1.2 - up w1
-            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
-            else if (addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
-              mbist_state <= 5'b10001;
+          8'b10011011: begin // M1.2 - up w1
+            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            else if (up_end == 1'b1) begin
+              mbist_state <= 8'b10010001;
             end else begin
-              mbist_state <= 5'b10000;
+              mbist_state <= 8'b10010000;
             end
           end
 
-          5'b10001: begin // M2.1 - up r1
-            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
+          8'b10010001: begin // M2.1 - up r1
+            if (mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
-              mbist_state <= 5'b11010;
+              mbist_state <= 8'b10011010;
             end
           end
 
-          5'b11010: begin // M2.2 - up w0
-            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
-            else if (addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
-              mbist_state <= 5'b10100;
+          8'b10011010: begin // M2.2 - up w0
+            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            else if (up_end == 1'b1) begin
+              mbist_state <= 8'b10010100;
             end else begin
-              mbist_state <= 5'b10001;
+              mbist_state <= 8'b10010001;
             end
           end
 
-          5'b10100: begin // M3.1 - down r0
-            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
+          8'b10010100: begin // M3.1 - down r0
+            if (mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
-              mbist_state <= 5'b11111;
+              mbist_state <= 8'b10011111;
             end
           end
 
-          5'b11111: begin // M3.2 - down w1
-            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
-            else if (addr_ends[0] == 1'b1 && bwe_ends[0] == 1'b1) begin
-              mbist_state <= 5'b10101;
+          8'b10011111: begin // M3.2 - down w1
+            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            else if (down_end == 1'b1) begin
+              mbist_state <= 8'b10010101;
             end else begin
-              mbist_state <= 5'b10100;
+              mbist_state <= 8'b10010100;
             end
           end
 
-          5'b10101: begin // M4.1 - down r1
-            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
+          8'b10010101: begin // M4.1 - down r1
+            if (mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
-              mbist_state <= 5'b11110;
+              mbist_state <= 8'b10011110;
             end
           end
 
-          5'b11110: begin // M4.2 - down w0
-            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
-            else if (addr_ends[0] == 1'b1 && bwe_ends[0] == 1'b1) begin
-              mbist_state <= 5'b01100;
+          8'b10011110: begin // M4.2 - down w0
+            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            else if (down_end == 1'b1) begin
+              mbist_state <= 8'b10001100;
             end else begin
-              mbist_state <= 5'b10101;
+              mbist_state <= 8'b10010101;
             end
           end
 
-          5'b01100: begin // M5.1 - down r0
-            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
-            else if (addr_ends[0] == 1'b1 && bwe_ends[0] == 1'b1) begin
-              mbist_state <= 5'b00001;
+          8'b10001100: begin // M5.1 - down r0
+            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            else if (down_end == 1'b1) begin
+              mbist_state <= 8'h01;
             end
           end
 
-          5'b00001: begin // END
-            if (mbist_en == 1'b0) mbist_state <= 5'b00000;
+          8'h01: begin // END
+            if (mbist_en == 1'b0) mbist_state <= 8'h00;
           end
 
           default: begin
-            mbist_state <= 5'b00001;
+            mbist_state <= 8'h01;
           end
         endcase
       end
     end
 
   //------------------------------ Combinational ----------------------------
+
+    always_comb begin
+      case (mbist_state)
+        8'b10011010: transition_state = 2'b01;
+        default:     transition_state = 2'b00;
+      endcase
+    end
+
+    always_comb begin
+      case (mbist_state)
+        8'h00:       z_state = 4'h0;
+        8'b10001010: z_state = 4'h1;
+        8'b10010000: z_state = 4'h2;
+        8'b10011011: z_state = 4'h2;
+        8'b10010001: z_state = 4'h3;
+        8'b10011010: z_state = 4'h3;
+        8'b10010100: z_state = 4'h4;
+        8'b10011111: z_state = 4'h4;
+        8'b10010101: z_state = 4'h5;
+        8'b10011110: z_state = 4'h5;
+        8'b10001100: z_state = 4'h6;
+        8'h01:       z_state = 4'h7;
+        default:     z_state = 4'hF;
+      endcase
+    end
+
     always @(*) begin
       if (mbist_sel) begin
-          if (mbist_state == 5'b11010 && addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1) begin
+          if ((transition_state[0] && up_end) || (transition_state[1] && down_end)) begin
             bwe_shift = 2'b00;
             addr_cnt  = 2'b00;
           end else begin
@@ -269,24 +301,6 @@ module mbist
           bwe_shift = 2'b11;
           addr_cnt  = 2'b11;
       end
-    end
-
-    always_comb begin
-      case (mbist_state)
-        5'b00000: z_state = 4'h0;
-        5'b01010: z_state = 4'h1;
-        5'b10000: z_state = 4'h2;
-        5'b11011: z_state = 4'h2;
-        5'b10001: z_state = 4'h3;
-        5'b11010: z_state = 4'h3;
-        5'b10100: z_state = 4'h4;
-        5'b11111: z_state = 4'h4;
-        5'b10101: z_state = 4'h5;
-        5'b11110: z_state = 4'h5;
-        5'b01100: z_state = 4'h6;
-        5'b00001: z_state = 4'h7;
-        default:  z_state = 4'hF;
-      endcase
     end
 
 endmodule
