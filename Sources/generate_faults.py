@@ -5,6 +5,11 @@ import os
 import random
 import sys
 
+def lin_to_exp(x, base, max):
+    x_norm = x / max
+    y_norm = (base**x_norm - 1.0) / (base - 1.0)
+    return int(y_norm * max)
+
 def bitmask(w):
     return (1 << w) - 1
 
@@ -119,7 +124,7 @@ for i, b in enumerate(base):
     label = ""
     init_bit = R.randint(0, 1)
     primitive = 0
-    prim_rand = R.randint(0, (2**16)-1)
+    prim_rand = R.randint(0x0000, 0xFFFF)
 
     prim_watch = 0
     prim_watch_pattern = 0
@@ -140,6 +145,7 @@ for i, b in enumerate(base):
     elif b < 330: #DRF - 8%
         label = "   DRF"
         primitive = 0b001
+        prim_rand = lin_to_exp(prim_rand, base=50, max=0xFFFF)
     elif b < 430: #TF - 10%
         label = "    TF"
         primitive = 0b010
