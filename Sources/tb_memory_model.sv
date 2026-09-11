@@ -111,7 +111,7 @@ module testbench;
   
   initial begin
     // Dump variables for editing
-    $dumpfile("testbench.vcd");
+    $dumpfile("testbench.fst");
     $dumpvars(7); //7 for just the baseline until FaultDB, 9 to include fault models, 0 for everything
     log_fd = $fopen("testbench.log");
     
