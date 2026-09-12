@@ -1,5 +1,5 @@
 # Set core clock definition
-create_clock -name clk -period 25.0000 [get_ports {clk}]
+create_clock -name clk -period 40.0000 [get_ports {clk}]
 
 # Define achievable transition thresholds (0.5ns)
 # - Entries in macro .lib files have been adjusted to at least 0.2
