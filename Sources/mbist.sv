@@ -30,11 +30,11 @@ module mbist
   );
 
     localparam int bweW = $clog2(mem_dataW);
+    localparam int cntW = mem_addrW+bweW;
 
     //Registers
     reg [7:0] mbist_state;
-    reg [mem_addrW-1:0] mbist_addr;
-    reg [bweW-1:0] mbist_bwe_cnt;
+    reg [cntW-1:0] mbist_addr_counter;
 
     reg                 comp_en_d;
     reg           [7:0] mbist_state_d;
@@ -47,11 +47,11 @@ module mbist
     logic [1:0] transition_state;
     logic [3:0] z_state;
 
+    logic [cntW-1:0] mbist_addr_bwe;
+    logic [mem_addrW-1:0] mbist_addr;
+    logic [bweW-1:0] mbist_bwe;
     logic [mem_dataW-1:0] mbist_bwe_n;
-    logic [1:0] bwe_shift;
-    logic [3:0] bwe_ends;
     logic [1:0] addr_cnt;
-    logic [3:0] addr_ends;
     logic       up_end;
     logic       down_end;
     logic       state_end;
@@ -75,10 +75,11 @@ module mbist
     assign re_n = mbist_en ? mbist_re_n : 1'b1;
     assign mbist_dout = mbist_en ? dout : '0;
 
-    assign bwe_ends = {!mbist_bwe_n[mem_dataW-1], !mbist_bwe_n[0]};
-    assign addr_ends = {mbist_addr == (2**mem_addrW-1), mbist_addr == 0};
-    assign up_end = addr_ends[1] == 1'b1 && bwe_ends[1] == 1'b1;
-    assign down_end = addr_ends[0] == 1'b1 && bwe_ends[0] == 1'b1;
+    assign mbist_addr_bwe = mbist_addr_counter; //To be replaced by better counter logic
+    assign mbist_bwe = mbist_addr_bwe[bweW-1:0];
+    assign mbist_addr = mbist_addr_bwe[cntW-1:bweW];
+    assign up_end = mbist_addr_bwe == (2**cntW-1);
+    assign down_end = mbist_addr_bwe == 0;
     assign state_end = mbist_state[2] ? down_end : up_end;
 
     assign mbist_sel = mbist_state[7] == 1'b1;
@@ -94,7 +95,7 @@ module mbist
     genvar x;
     generate
       for (x = 0; x < mem_dataW; x = x + 1) begin : mbist_bwe_logic
-        assign mbist_bwe_n[x] = (mbist_bwe_cnt == x) ? 1'b0 : 1'b1;
+        assign mbist_bwe_n[x] = (mbist_bwe == x) ? 1'b0 : 1'b1;
       end
       for (x = 0; x < parallel_mems; x = x + 1) begin : parallel_control
         assign bwe_n[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_en ? mbist_bwe_n : '1;
@@ -131,33 +132,17 @@ module mbist
       end
     end
 
-    // BWE Counter with selectable direction
-    always @(posedge clk or negedge nres)
-    begin
-      if (nres == 0) begin
-        mbist_bwe_cnt <= '0;
-      end else begin
-        if (bwe_shift == 2'b11) begin
-          mbist_bwe_cnt <= '0;
-        end else if (bwe_shift[0] == 1'b1) begin
-          mbist_bwe_cnt <= mbist_bwe_cnt + 1'b1;
-        end else if (bwe_shift[1] == 1'b1) begin
-          mbist_bwe_cnt <= mbist_bwe_cnt - 1'b1;
-        end
-      end
-    end
-
     // Address Counter with selectable direction
     always @(posedge clk or negedge nres) begin
       if (nres == 0) begin
-        mbist_addr <= '0;
+        mbist_addr_counter <= '0;
       end else begin
         if (addr_cnt == 2'b11) begin
-          mbist_addr <= '0;
+          mbist_addr_counter <= '0;
         end else if (addr_cnt[0] == 1'b1) begin
-          mbist_addr <= mbist_addr + 1'b1;
+          mbist_addr_counter <= mbist_addr_counter + 1'b1;
         end else if (addr_cnt[1] == 1'b1) begin
-          mbist_addr <= mbist_addr - 1'b1;
+          mbist_addr_counter <= mbist_addr_counter - 1'b1;
         end
       end
     end
@@ -359,16 +344,12 @@ module mbist
     always @(*) begin
       if (mbist_sel) begin
           if ((transition_state[0] && up_end) || (transition_state[1] && down_end)) begin
-            bwe_shift = 2'b00;
             addr_cnt  = 2'b00;
           end else begin
-            bwe_shift = { mbist_state[3] && mbist_state[2], 
+            addr_cnt = { mbist_state[3] && mbist_state[2], 
                           mbist_state[3] && !mbist_state[2]};
-            addr_cnt  = { mbist_state[3] && mbist_state[2] && bwe_ends[0], 
-                          mbist_state[3] && !mbist_state[2] && bwe_ends[1]};
           end
       end else begin
-          bwe_shift = 2'b11;
           addr_cnt  = 2'b11;
       end
     end
