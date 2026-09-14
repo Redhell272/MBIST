@@ -17,7 +17,7 @@ module mbist
     output logic [(parallel_mems*addrW)-1:0] mbist_fault_addr,
     output logic               [(dataW)-1:0] mbist_fault_data,
     output logic               [(dataW)-1:0] mbist_fault_dout,
-    output logic               [(dataW)-1:0] mbist_fault_expc,
+    output logic         [parallel_mems-1:0] mbist_fault_expc,
     output logic                             mbist_done,
     //Memory Port
     output logic                 cs_n,
@@ -29,11 +29,12 @@ module mbist
     input  logic     [dataW-1:0] dout
   );
 
+    localparam int bweW = $clog2(mem_dataW);
+
     //Registers
     reg [7:0] mbist_state;
-
     reg [mem_addrW-1:0] mbist_addr;
-    reg [mem_dataW-1:0] mbist_bwe_n;
+    reg [bweW-1:0] mbist_bwe_cnt;
 
     reg                 comp_en_d;
     reg           [7:0] mbist_state_d;
@@ -46,6 +47,7 @@ module mbist
     logic [1:0] transition_state;
     logic [3:0] z_state;
 
+    logic [mem_dataW-1:0] mbist_bwe_n;
     logic [1:0] bwe_shift;
     logic [3:0] bwe_ends;
     logic [1:0] addr_cnt;
@@ -73,9 +75,9 @@ module mbist
     assign re_n = mbist_en ? mbist_re_n : 1'b1;
     assign mbist_dout = mbist_en ? dout : '0;
 
-    assign bwe_ends = {!mbist_bwe_n[mem_dataW-1], !mbist_bwe_n[mem_dataW-2], !mbist_bwe_n[1], !mbist_bwe_n[0]};
-    assign addr_ends = {mbist_addr == (2**mem_addrW-1), mbist_addr == (2**mem_addrW-2), mbist_addr == 1, mbist_addr == 0};
-    assign up_end = addr_ends[3] == 1'b1 && bwe_ends[3] == 1'b1;
+    assign bwe_ends = {!mbist_bwe_n[mem_dataW-1], !mbist_bwe_n[0]};
+    assign addr_ends = {mbist_addr == (2**mem_addrW-1), mbist_addr == 0};
+    assign up_end = addr_ends[1] == 1'b1 && bwe_ends[1] == 1'b1;
     assign down_end = addr_ends[0] == 1'b1 && bwe_ends[0] == 1'b1;
     assign state_end = mbist_state[2] ? down_end : up_end;
 
@@ -91,6 +93,9 @@ module mbist
 
     genvar x;
     generate
+      for (x = 0; x < mem_dataW; x = x + 1) begin : mbist_bwe_logic
+        assign mbist_bwe_n[x] = (mbist_bwe_cnt == x) ? 1'b0 : 1'b1;
+      end
       for (x = 0; x < parallel_mems; x = x + 1) begin : parallel_control
         assign bwe_n[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_en ? mbist_bwe_n : '1;
         assign mbist_sect[x] = (base_index + x) / parallel_mems;
@@ -100,7 +105,7 @@ module mbist
         assign mbist_fault_addr[(addrW*(x+1))-1:(addrW*x)] = {mbist_sect[x], mbist_fault[x] ? mbist_addr_d : '0};
         assign mbist_fault_data[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? ~mbist_bwe_d : '0;
         assign mbist_fault_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] : '0;
-        assign mbist_fault_expc[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? mbist_din_d[(mem_dataW*(x+1))-1:(mem_dataW*x)] : '0;
+        assign mbist_fault_expc[x] = mbist_fault[x] ? mbist_din_d[(mem_dataW*x)] : '0;
       end
     endgenerate
 
@@ -126,20 +131,18 @@ module mbist
       end
     end
 
-    // bWE Shift Register with selectable direction
+    // BWE Counter with selectable direction
     always @(posedge clk or negedge nres)
     begin
       if (nres == 0) begin
-        mbist_bwe_n[0] <= 1'b0;
-        mbist_bwe_n[mem_dataW-1:1] <= '1;
+        mbist_bwe_cnt <= '0;
       end else begin
         if (bwe_shift == 2'b11) begin
-          mbist_bwe_n[0] <= 1'b0;
-          mbist_bwe_n[mem_dataW-1:1] <= '1;
+          mbist_bwe_cnt <= '0;
         end else if (bwe_shift[0] == 1'b1) begin
-          mbist_bwe_n <= {mbist_bwe_n[mem_dataW-2:0], mbist_bwe_n[mem_dataW-1]};
+          mbist_bwe_cnt <= mbist_bwe_cnt + 1'b1;
         end else if (bwe_shift[1] == 1'b1) begin
-          mbist_bwe_n <= {mbist_bwe_n[0], mbist_bwe_n[mem_dataW-1:1]};
+          mbist_bwe_cnt <= mbist_bwe_cnt - 1'b1;
         end
       end
     end
@@ -362,7 +365,7 @@ module mbist
             bwe_shift = { mbist_state[3] && mbist_state[2], 
                           mbist_state[3] && !mbist_state[2]};
             addr_cnt  = { mbist_state[3] && mbist_state[2] && bwe_ends[0], 
-                          mbist_state[3] && !mbist_state[2] && bwe_ends[3]};
+                          mbist_state[3] && !mbist_state[2] && bwe_ends[1]};
           end
       end else begin
           bwe_shift = 2'b11;
