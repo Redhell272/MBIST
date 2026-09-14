@@ -54,16 +54,24 @@ class Tee:
 def state_map(state):
     state_dict = {
         0b00000: "IDLE",
-        0b01010: "M0.1",
-        0b10000: "M1.1",
-        0b11011: "M1.2",
-        0b10001: "M2.1",
-        0b11010: "M2.2",
-        0b10100: "M3.1",
-        0b11111: "M3.2",
-        0b10101: "M4.1",
-        0b11110: "M4.2",
-        0b01100: "M5.1",
+        0b10001010: "M0.1",
+        0b10000000: "M1.1",
+        0b10000011: "M1.2",
+        0b10010011: "M1.3",
+        0b10001001: "M1.4",
+        0b10000101: "M2.1",
+        0b10000110: "M2.2",
+        0b10010110: "M2.3",
+        0b10001100: "M2.4",
+        0b10000100: "M3.1",
+        0b10100110: "M3.2",
+        0b10000111: "M3.3",
+        0b10001101: "M3.4",
+        0b10000001: "M4.1",
+        0b10100011: "M4.2",
+        0b10000010: "M4.3",
+        0b10010000: "M4.4",
+        0b10001000: "M4.5",
         0b00001: "END"}
     return state_dict.get(state, f"ERR({state})")
 
@@ -161,7 +169,7 @@ for i in range(n_faults):
         disturb_pattern = (disturb_prim >> (addrW+dataW+depthW)) & bitmask(2**(depthW+1))
         
         if disturb_count != 0:
-            prim_text += f'(d={disturb_addr:03X}:{disturb_bit:02d}|'
+            prim_text += f'(d={disturb_addr:04X}:{disturb_bit:02d}|'
             for j in range(disturb_count):
                 disturb_code = (disturb_pattern >> (j*2)) & 0x03
                 if disturb_code == 3:
@@ -174,7 +182,7 @@ for i in range(n_faults):
                 prim_text += f'  '
             prim_text += f')'
         else:
-            prim_text += f'                 '
+            prim_text += f'                  '
 
     prim_text += f'|'
 
@@ -186,9 +194,9 @@ for i in range(n_faults):
         couple_bit = ((couple_prim >> (2+addrW)) & bitmask(dataW)) + bit_offset
         
         if couple_en != 0:
-            prim_text += f'(c={couple_addr:03X}:{couple_bit:02d}|{couple_value:01d})'
+            prim_text += f'(c={couple_addr:04X}:{couple_bit:02d}|{couple_value:01d})'
         else:
-            prim_text += f'            '
+            prim_text += f'             '
 
     primitives.append([prim_type, prim_text])
     prim_type_counts[prim_type] += 1
@@ -209,7 +217,7 @@ for text in text_array[5 + n_faults:-3]:
     if bit != 0: bit = bit.bit_length() - 1
     state = int(text[8].split("=")[1], 16)
     dout = (int(text[9].split("=")[1], 16) >> bit) & 0x01
-    expc = (int(text[10].split("=")[1], 16) >> bit) & 0x01
+    expc = int(text[10].split("=")[1])
 
     bit_offset = sect % parallel_mems
     bit = bit + (bit_offset * mem_dataW)
