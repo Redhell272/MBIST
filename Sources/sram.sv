@@ -57,7 +57,7 @@ module sram
         // Port 1 (Unused - Tied off safely to avoid floating gates)
         .clk1   (1'b0),
         .csb1   (1'b1),
-        .addr1  (8'b00000000),
+        .addr1  ('0),
         .dout1  (unused_dout1)
     );
 

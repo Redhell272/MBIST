@@ -1,7 +1,13 @@
 clear
 rm -rf ~/my_designs/MBIST/Sources/LibreLane/runs
-librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --skip KLayout.Render --skip KLayout.DRC --skip Magic.DRC --skip Checker.XOR --skip Checker.SetupViolations --skip Checker.MaxSlewViolations
+librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --skip KLayout.Render --skip KLayout.DRC --skip Magic.DRC --skip Checker.XOR
 
 librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --flow openinklayout
 -or-
 librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --flow OpenInOpenROAD
+
+cd ../my_designs/MBIST/Sources/LibreLane/runs/RUN_
+openroad -exit -no_init << 'EOF'
+read_db ./28-openroad-globalplacement/top_model.odb
+report_design_area
+EOF
