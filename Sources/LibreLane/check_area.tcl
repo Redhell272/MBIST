@@ -18,8 +18,8 @@ foreach inst [[ord::get_db_block] getInsts] {
 }
 puts "\n"
 puts "========================================"
-puts "  MBIST Cell Count: $cell_count"
-puts [format "  MBIST Physical Area:    %.4f um^2" $total_area]
+puts [format "     MBIST Cell Count: %d" $cell_count]
+puts [format "  MBIST Physical Area: %.4f um^2" $total_area]
 puts "========================================"
 
 set total_area 0.0
@@ -40,8 +40,8 @@ foreach inst [[ord::get_db_block] getInsts] {
 }
 puts "\n"
 puts "========================================"
-puts "  MEM Cell Count: $cell_count"
-puts [format "  MEM Physical Area:    %.4f um^2" $total_area]
+puts [format "     MEM Cell Count: %d" $cell_count]
+puts [format "  MEM Physical Area: %.4f um^2" $total_area]
 puts "========================================"
 
 set total_area 0.0
@@ -59,8 +59,8 @@ foreach inst [[ord::get_db_block] getInsts] {
 }
 puts "\n"
 puts "========================================"
-puts "  non-BLOCK Cell Count: $cell_count"
-puts [format "  non-BLOCK Physical Area:    %.4f um^2" $total_area]
+puts [format "     non-BLOCK Cell Count: %d" $cell_count]
+puts [format "  non-BLOCK Physical Area: %.4f um^2" $total_area]
 puts "========================================"
 
 set total_area 0.0
@@ -76,8 +76,8 @@ foreach inst [[ord::get_db_block] getInsts] {
 }
 puts "\n"
 puts "========================================"
-puts "  Total Cell Count: $cell_count"
-puts [format "  Total Physical Area:    %.4f um^2" $total_area]
+puts [format "     Total Cell Count: %d" $cell_count]
+puts [format "  Total Physical Area: %.4f um^2" $total_area]
 puts "========================================"
 
 puts "\n"
