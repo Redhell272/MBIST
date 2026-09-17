@@ -1,15 +1,22 @@
 
-read_db ./28-openroad-globalplacement/top_model.odb
+set odb_file [lindex $argv 0]
+read_db $odb_file
 
 puts ""
 puts "================================================================"
 puts ""
-puts "Checking Area from Global Placement"
+if {$odb_file eq "./28-openroad-globalplacement/top_model.odb"} {
+    puts "Checking Area from Global Placement"
+} elseif {$odb_file eq "./52-openroad-fillinsertion/top_model.odb"} {
+    puts "Checking Area after Fill Insertion"
+} elseif {$odb_file eq "./final/odb/top_model.odb"} {
+    puts "Checking Final Area"
+}
 puts ""
 puts "================================================================"
 
-set total_area 0.0
-set cell_count 0
+set mbist_area 0.0
+set mbist_cells 0
 foreach inst [[ord::get_db_block] getInsts] {
     set name [$inst getName]
     if {[string match -nocase "*mbist*" $name]} {
@@ -20,17 +27,17 @@ foreach inst [[ord::get_db_block] getInsts] {
             set h_um [expr {[$master getHeight] / 1000.0}]
             set cell_area [expr {$w_um * $h_um}]
             
-            set total_area [expr {$total_area + $cell_area}]
-            incr cell_count
+            set mbist_area [expr {$mbist_area + $cell_area}]
+            incr mbist_cells
         }
     }
 }
 puts ""
-puts [format "     MBISTs Cell Count: %d" $cell_count]
-puts [format "  MBISTs Physical Area: %.4f um^2" $total_area]
+puts [format "     MBISTs Cell Count: %d" $mbist_cells]
+puts [format "  MBISTs Physical Area: %.4f um^2" $mbist_area]
 
-set total_area 0.0
-set cell_count 0
+set non_mbist_mem_area 0.0
+set non_mbist_mem_cells 0
 foreach inst [[ord::get_db_block] getInsts] {
     set name [$inst getName]
     if {[string match -nocase "*mem*" $name]} {
@@ -42,18 +49,18 @@ foreach inst [[ord::get_db_block] getInsts] {
                 set h_um [expr {[$master getHeight] / 1000.0}]
                 set cell_area [expr {$w_um * $h_um}]
                 
-                set total_area [expr {$total_area + $cell_area}]
-                incr cell_count
+                set non_mbist_mem_area [expr {$non_mbist_mem_area + $cell_area}]
+                incr non_mbist_mem_cells
             }
         }
     }
 }
 puts ""
-puts [format "     non-MBIST MEMx Cell Count: %d" $cell_count]
-puts [format "  non-MBIST MEMx Physical Area: %.4f um^2" $total_area]
+puts [format "     non-MBIST MEMx Cell Count: %d" $non_mbist_mem_cells]
+puts [format "  non-MBIST MEMx Physical Area: %.4f um^2" $non_mbist_mem_area]
 
-set total_area 0.0
-set cell_count 0
+set mem1_area 0.0
+set mem1_cells 0
 foreach inst [[ord::get_db_block] getInsts] {
     set name [$inst getName]
     if {[string match -nocase "*mem1*" $name]} {
@@ -64,17 +71,17 @@ foreach inst [[ord::get_db_block] getInsts] {
             set h_um [expr {[$master getHeight] / 1000.0}]
             set cell_area [expr {$w_um * $h_um}]
             
-            set total_area [expr {$total_area + $cell_area}]
-            incr cell_count
+            set mem1_area [expr {$mem1_area + $cell_area}]
+            incr mem1_cells
         }
     }
 }
 puts ""
-puts [format "     MEM1 Cell Count: %d" $cell_count]
-puts [format "  MEM1 Physical Area: %.4f um^2" $total_area]
+puts [format "     MEM1 Cell Count: %d" $mem1_cells]
+puts [format "  MEM1 Physical Area: %.4f um^2" $mem1_area]
 
-set total_area 0.0
-set cell_count 0
+set mem2_area 0.0
+set mem2_cells 0
 foreach inst [[ord::get_db_block] getInsts] {
     set name [$inst getName]
     if {[string match -nocase "*mem2*" $name]} {
@@ -85,17 +92,17 @@ foreach inst [[ord::get_db_block] getInsts] {
             set h_um [expr {[$master getHeight] / 1000.0}]
             set cell_area [expr {$w_um * $h_um}]
             
-            set total_area [expr {$total_area + $cell_area}]
-            incr cell_count
+            set mem2_area [expr {$mem2_area + $cell_area}]
+            incr mem2_cells
         }
     }
 }
 puts ""
-puts [format "     MEM2 Cell Count: %d" $cell_count]
-puts [format "  MEM2 Physical Area: %.4f um^2" $total_area]
+puts [format "     MEM2 Cell Count: %d" $mem2_cells]
+puts [format "  MEM2 Physical Area: %.4f um^2" $mem2_area]
 
-set total_area 0.0
-set cell_count 0
+set non_mem_area 0.0
+set non_mem_cells 0
 foreach inst [[ord::get_db_block] getInsts] {
     set name [$inst getName]
     if {!([string match -nocase "*mem*" $name])} {
@@ -106,17 +113,17 @@ foreach inst [[ord::get_db_block] getInsts] {
             set h_um [expr {[$master getHeight] / 1000.0}]
             set cell_area [expr {$w_um * $h_um}]
             
-            set total_area [expr {$total_area + $cell_area}]
-            incr cell_count
+            set non_mem_area [expr {$non_mem_area + $cell_area}]
+            incr non_mem_cells
         }
     }
 }
 puts ""
-puts [format "     non-MEM Cell Count: %d" $cell_count]
-puts [format "  non-MEM Physical Area: %.4f um^2" $total_area]
+puts [format "     non-MEM Cell Count: %d" $non_mem_cells]
+puts [format "  non-MEM Physical Area: %.4f um^2" $non_mem_area]
 
-set total_area 0.0
-set cell_count 0
+set block_area 0.0
+set block_cells 0
 foreach inst [[ord::get_db_block] getInsts] {
     set master [$inst getMaster]
     if {[$master getType] == "BLOCK"} {
@@ -124,16 +131,16 @@ foreach inst [[ord::get_db_block] getInsts] {
         set h_um [expr {[$master getHeight] / 1000.0}]
         set cell_area [expr {$w_um * $h_um}]
         
-        set total_area [expr {$total_area + $cell_area}]
-        incr cell_count
+        set block_area [expr {$block_area + $cell_area}]
+        incr block_cells
     }
 }
 puts ""
-puts [format "     BLOCK Cell Count: %d" $cell_count]
-puts [format "  BLOCK Physical Area: %.4f um^2" $total_area]
+puts [format "     BLOCK Cell Count: %d" $block_cells]
+puts [format "  BLOCK Physical Area: %.4f um^2" $block_area]
 
 set total_area 0.0
-set cell_count 0
+set total_cells 0
 foreach inst [[ord::get_db_block] getInsts] {
     set master [$inst getMaster]
     set w_um [expr {[$master getWidth] / 1000.0}]
@@ -141,10 +148,10 @@ foreach inst [[ord::get_db_block] getInsts] {
     set cell_area [expr {$w_um * $h_um}]
     
     set total_area [expr {$total_area + $cell_area}]
-    incr cell_count
+    incr total_cells
 }
 puts ""
-puts [format "     Total Cell Count: %d" $cell_count]
+puts [format "     Total Cell Count: %d" $total_cells]
 puts [format "  Total Physical Area: %.4f um^2" $total_area]
 
 puts ""

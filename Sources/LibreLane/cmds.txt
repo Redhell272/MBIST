@@ -10,6 +10,7 @@ librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --flow ope
 librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --flow OpenInOpenROAD
 
 cd ../my_designs/MBIST/Sources/LibreLane/runs/RUN_
-openroad -exit -no_init ./../../check_area_GP.tcl
-openroad -exit -no_init ./../../check_area_FI.tcl
+openroad -exit -no_init ./../../check_area.tcl "./28-openroad-globalplacement/top_model.odb"
+openroad -exit -no_init ./../../check_area.tcl "./52-openroad-fillinsertion/top_model.odb"
+openroad -exit -no_init ./../../check_area.tcl "./final/odb/top_model.odb"
 cd ~/librelane
