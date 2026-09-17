@@ -7,6 +7,11 @@ foreach inst [[ord::get_db_block] getInsts] {
     if {[string match -nocase "*mbist*" $name]} {
         set master [$inst getMaster]
         if {[$master getType] != "BLOCK"} {
+            
+            if {$cell_count < 4} {
+                puts [format "\nExample MBIST Cell: %s\n" $name]
+            }
+
             set w_um [expr {[$master getWidth] / 1000.0}]
             set h_um [expr {[$master getHeight] / 1000.0}]
             set cell_area [expr {$w_um * $h_um}]
@@ -29,6 +34,11 @@ foreach inst [[ord::get_db_block] getInsts] {
     if {[string match -nocase "*mem*" $name]} {
         set master [$inst getMaster]
         if {[$master getType] != "BLOCK"} {
+
+            if {$cell_count < 4} {
+                puts [format "\nExample MEM Cell: %s\n" $name]
+            }
+            
             set w_um [expr {[$master getWidth] / 1000.0}]
             set h_um [expr {[$master getHeight] / 1000.0}]
             set cell_area [expr {$w_um * $h_um}]
