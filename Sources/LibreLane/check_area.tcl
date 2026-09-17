@@ -7,9 +7,9 @@ foreach inst [[ord::get_db_block] getInsts] {
     if {[string match -nocase "*mbist*" $name]} {
         set master [$inst getMaster]
         if {[$master getType] != "BLOCK"} {
-            
+
             if {$cell_count < 4} {
-                puts [format "\nExample MBIST Cell: %s\n" $name]
+                puts [format "\nExample MBIST Cell: %s" $name]
             }
 
             set w_um [expr {[$master getWidth] / 1000.0}]
@@ -23,20 +23,20 @@ foreach inst [[ord::get_db_block] getInsts] {
 }
 puts "\n"
 puts "========================================"
-puts [format "     MBIST Cell Count: %d" $cell_count]
-puts [format "  MBIST Physical Area: %.4f um^2" $total_area]
+puts [format "     MBISTs Cell Count: %d" $cell_count]
+puts [format "  MBISTs Physical Area: %.4f um^2" $total_area]
 puts "========================================"
 
 set total_area 0.0
 set cell_count 0
 foreach inst [[ord::get_db_block] getInsts] {
     set name [$inst getName]
-    if {[string match -nocase "*mem*" $name]} {
+    if {[string match -nocase "*mem1*" $name]} {
         set master [$inst getMaster]
         if {[$master getType] != "BLOCK"} {
 
             if {$cell_count < 4} {
-                puts [format "\nExample MEM Cell: %s\n" $name]
+                puts [format "\nExample MEM1 Cell: %s" $name]
             }
             
             set w_um [expr {[$master getWidth] / 1000.0}]
@@ -50,8 +50,35 @@ foreach inst [[ord::get_db_block] getInsts] {
 }
 puts "\n"
 puts "========================================"
-puts [format "     MEM Cell Count: %d" $cell_count]
-puts [format "  MEM Physical Area: %.4f um^2" $total_area]
+puts [format "     MEM1 Cell Count: %d" $cell_count]
+puts [format "  MEM1 Physical Area: %.4f um^2" $total_area]
+puts "========================================"
+
+set total_area 0.0
+set cell_count 0
+foreach inst [[ord::get_db_block] getInsts] {
+    set name [$inst getName]
+    if {[string match -nocase "*mem2*" $name]} {
+        set master [$inst getMaster]
+        if {[$master getType] != "BLOCK"} {
+
+            if {$cell_count < 4} {
+                puts [format "\nExample MEM2 Cell: %s" $name]
+            }
+            
+            set w_um [expr {[$master getWidth] / 1000.0}]
+            set h_um [expr {[$master getHeight] / 1000.0}]
+            set cell_area [expr {$w_um * $h_um}]
+            
+            set total_area [expr {$total_area + $cell_area}]
+            incr cell_count
+        }
+    }
+}
+puts "\n"
+puts "========================================"
+puts [format "     MEM2 Cell Count: %d" $cell_count]
+puts [format "  MEM2 Physical Area: %.4f um^2" $total_area]
 puts "========================================"
 
 set total_area 0.0
