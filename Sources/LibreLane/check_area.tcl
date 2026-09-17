@@ -21,7 +21,6 @@ if {[info exists ::env(MBIST_CHECK_AREA_ODB)]} {
 
 puts ""
 puts "================================================================"
-
 puts ""
 if {$odb_file eq "./28-openroad-globalplacement/top_model.odb"} {
     puts "Checking Area from Global Placement"
@@ -30,8 +29,6 @@ if {$odb_file eq "./28-openroad-globalplacement/top_model.odb"} {
 } elseif {$odb_file eq "./final/odb/top_model.odb"} {
     puts "Checking Final Area"
 }
-puts ""
-puts "================================================================"
 
 
 
@@ -104,31 +101,32 @@ foreach inst [[ord::get_db_block] getInsts] {
 
 
 puts ""
-puts [format "     MBISTs Cell Count: %d" $mbist_cells]
-puts [format "  MBISTs Physical Area: %.4f um^2" $mbist_area]
+puts "================================================================"
+puts ""
+puts [format "             MBISTs Cell Count: %d" $mbist_cells]
+puts [format "          MBISTs Physical Area: %.4f um^2" $mbist_area]
 puts ""
 puts [format "     non-MBIST MEMx Cell Count: %d" $non_mbist_mem_cells]
 puts [format "  non-MBIST MEMx Physical Area: %.4f um^2" $non_mbist_mem_area]
 puts ""
 puts "================================================================"
 puts ""
-puts [format "     MEM1 Cell Count: %d" $mem1_cells]
-puts [format "  MEM1 Physical Area: %.4f um^2" $mem1_area]
+puts [format "               MEM1 Cell Count: %d" $mem1_cells]
+puts [format "            MEM1 Physical Area: %.4f um^2" $mem1_area]
 puts ""
-puts [format "     MEM2 Cell Count: %d" $mem2_cells]
-puts [format "  MEM2 Physical Area: %.4f um^2" $mem2_area]
+puts [format "               MEM2 Cell Count: %d" $mem2_cells]
+puts [format "            MEM2 Physical Area: %.4f um^2" $mem2_area]
 puts ""
-puts [format "     non-MEM Cell Count: %d" $non_mem_cells]
-puts [format "  non-MEM Physical Area: %.4f um^2" $non_mem_area]
+puts [format "            non-MEM Cell Count: %d" $non_mem_cells]
+puts [format "         non-MEM Physical Area: %.4f um^2" $non_mem_area]
 puts ""
-puts [format "     BLOCK Cell Count: %d" $block_cells]
-puts [format "  BLOCK Physical Area: %.4f um^2" $block_area]
-puts ""
-puts "================================================================"
-puts ""
-puts [format "     Total Cell Count: %d" $total_cells]
-puts [format "  Total Physical Area: %.4f um^2" $total_area]
+puts [format "              BLOCK Cell Count: %d" $block_cells]
+puts [format "           BLOCK Physical Area: %.4f um^2" $block_area]
 puts ""
 puts "================================================================"
-
+puts ""
+puts [format "              Total Cell Count: %d" $total_cells]
+puts [format "           Total Physical Area: %.4f um^2" $total_area]
+puts ""
+puts "================================================================"
 puts ""
