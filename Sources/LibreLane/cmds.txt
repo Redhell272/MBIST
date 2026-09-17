@@ -1,3 +1,6 @@
+cd ~/librelane
+nix-shell
+
 clear
 rm -rf ~/my_designs/MBIST/Sources/LibreLane/runs
 librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --skip KLayout.Render --skip KLayout.DRC --skip Magic.DRC --skip Checker.XOR
@@ -7,4 +10,6 @@ librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --flow ope
 librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --flow OpenInOpenROAD
 
 cd ../my_designs/MBIST/Sources/LibreLane/runs/RUN_
-openroad -exit -no_init ./../../check_area.tcl
+openroad -exit -no_init ./../../check_area_GP.tcl
+openroad -exit -no_init ./../../check_area_FI.tcl
+cd ~/librelane
