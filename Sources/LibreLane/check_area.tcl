@@ -27,6 +27,31 @@ set total_area 0.0
 set cell_count 0
 foreach inst [[ord::get_db_block] getInsts] {
     set name [$inst getName]
+    if {[string match -nocase "*mem*" $name]} {
+        if {!([string match -nocase "*mbist*" $name])} {
+            set master [$inst getMaster]
+            if {[$master getType] != "BLOCK"} {
+
+                set w_um [expr {[$master getWidth] / 1000.0}]
+                set h_um [expr {[$master getHeight] / 1000.0}]
+                set cell_area [expr {$w_um * $h_um}]
+                
+                set total_area [expr {$total_area + $cell_area}]
+                incr cell_count
+            }
+        }
+    }
+}
+puts ""
+puts "================================================================"
+puts [format "     non-MBIST MEMx Cell Count: %d" $cell_count]
+puts [format "  non-MBIST MEMx Physical Area: %.4f um^2" $total_area]
+puts "================================================================"
+
+set total_area 0.0
+set cell_count 0
+foreach inst [[ord::get_db_block] getInsts] {
+    set name [$inst getName]
     if {[string match -nocase "*mem1*" $name]} {
         set master [$inst getMaster]
         if {[$master getType] != "BLOCK"} {
