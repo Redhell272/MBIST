@@ -4,7 +4,6 @@ module testbench;
 
   localparam int fault_count = 64;
   localparam int random_seed = 42;
-  localparam int pipeline_stages = 0;
   localparam int parallel_mems = 2;
   localparam int mem_sections = 8;
   localparam int disturb_count = 2;
@@ -56,7 +55,6 @@ module testbench;
   
   // Instantiate Units Under Test
   top_model #(
-      .pipeline_stages(pipeline_stages),
       .parallel_mems(parallel_mems),
       .mem_sections(mem_sections),
       .fault_count(fault_count),
@@ -96,7 +94,7 @@ module testbench;
     .mem1_mbist_fault_dout(mem1_mbist_fault_dout),
     .mem1_mbist_fault_expc(mem1_mbist_fault_expc),
     .mem1_mbist_done(mem1_mbist_done),
-    //MEM1 MBIST Interface
+    //MEM2 MBIST Interface
     .mem2_mbist_en(mem2_mbist_en),
     .mem2_mbist_fault(mem2_mbist_fault),
     .mem2_mbist_fault_state(mem2_mbist_fault_state),
@@ -145,9 +143,9 @@ module testbench;
     #20 mem2_cs_n=1;
 
     #20 mem1_mbist_en='1; mem2_mbist_en='1;
-    wait(mem1_mbist_done == '1); // wait for MBIST END state
+    wait(mem1_mbist_done == '1); // wait for MEM1 MBIST
     #20 mem1_mbist_en='0;
-    wait(mem2_mbist_done == '1); // wait for MBIST END state
+    wait(mem2_mbist_done == '1); // wait for MEM2 MBIST
     #20 mem2_mbist_en='0;
 
     #10000;
