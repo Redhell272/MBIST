@@ -2,6 +2,8 @@
 //Test Logic Switch
 module testbench;
 
+  localparam int mbist_mode = 13;
+
   localparam int fault_count = 64;
   localparam int random_seed = 42;
   localparam int parallel_mems = 2;
@@ -35,6 +37,7 @@ module testbench;
   reg              mem2_re_n=1'b1;
   wire [dataW-1:0] mem2_dout;
 
+  reg                                     [3:0] mem1_mbist_mode=mbist_mode;
   reg                        [mem_sections-1:0] mem1_mbist_en='0;
   wire       [(mem_sections*parallel_mems)-1:0] mem1_mbist_fault;
   wire     [(mem_sections*parallel_mems*8)-1:0] mem1_mbist_fault_state;
@@ -44,6 +47,7 @@ module testbench;
   wire       [(mem_sections*parallel_mems)-1:0] mem1_mbist_fault_expc;
   wire                       [mem_sections-1:0] mem1_mbist_done;
 
+  reg                                     [3:0] mem2_mbist_mode=mbist_mode;
   reg                        [mem_sections-1:0] mem2_mbist_en='0;
   wire       [(mem_sections*parallel_mems)-1:0] mem2_mbist_fault;
   wire     [(mem_sections*parallel_mems*8)-1:0] mem2_mbist_fault_state;
@@ -64,9 +68,7 @@ module testbench;
       .addrW(addrW),
       .dataW(dataW)
     ) MEM (
-    `ifndef SYNTHESIS
     .log_fd(log_fd),
-    `endif
     .clk(clk),
     .nres(nres),
     //Mem1 Memory Port
@@ -86,7 +88,8 @@ module testbench;
     .mem2_re_n(mem2_re_n),
     .mem2_dout(mem2_dout),
     //MEM1 MBIST Interface
-    .mem1_mbist_en(mem1_mbist_en),
+    .mem1_mbist_mode(mem1_mbist_mode),
+    .mem1_mbist_en(mem1_mbist_en), 
     .mem1_mbist_fault(mem1_mbist_fault),
     .mem1_mbist_fault_state(mem1_mbist_fault_state),
     .mem1_mbist_fault_addr(mem1_mbist_fault_addr),
@@ -95,7 +98,8 @@ module testbench;
     .mem1_mbist_fault_expc(mem1_mbist_fault_expc),
     .mem1_mbist_done(mem1_mbist_done),
     //MEM2 MBIST Interface
-    .mem2_mbist_en(mem2_mbist_en),
+    .mem2_mbist_mode(mem2_mbist_mode),
+    .mem2_mbist_en(mem2_mbist_en), 
     .mem2_mbist_fault(mem2_mbist_fault),
     .mem2_mbist_fault_state(mem2_mbist_fault_state),
     .mem2_mbist_fault_addr(mem2_mbist_fault_addr),

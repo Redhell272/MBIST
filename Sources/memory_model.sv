@@ -27,6 +27,7 @@ module memory_model
     input  logic             re_n,
     output logic [dataW-1:0] dout,
     //MBIST Interface
+    input  logic                                    [3:0] mbist_mode,
     input  logic                       [mem_sections-1:0] mbist_en,
     output logic       [(mem_sections*parallel_mems)-1:0] mbist_fault,
     output logic     [(mem_sections*parallel_mems*8)-1:0] mbist_fault_state,
@@ -95,6 +96,7 @@ module memory_model
           .clk(clk),
           .nres(nres),
           //MBIST Interface
+          .mbist_mode(mbist_mode),
           .mbist_en(mbist_en[x]),
           .mbist_sel(mbist_sel),
           .mbist_fault(mbist_fault[                (parallel_mems*(x+1))-1:(parallel_mems*x)]),

@@ -1,3 +1,7 @@
+
+//`define COUNTERS
+//`define WORDMBIST
+
 module mbist
   #(
     parameter int base_index = 0,
@@ -11,6 +15,7 @@ module mbist
     input  logic nres,
     //MBIST Interface
     input  logic                             mbist_en,
+    input  logic                       [3:0] mbist_mode,
     output logic                             mbist_sel,
     output logic         [parallel_mems-1:0] mbist_fault,
     output logic     [(parallel_mems*8)-1:0] mbist_fault_state,
@@ -55,11 +60,14 @@ module mbist
     logic       up_end;
     logic       down_end;
     logic       state_end;
+    logic       mbist_end;
 
     logic             mbist_cs_n;
     logic             mbist_we_n;
     logic             mbist_re_n;
     logic             data_in;
+    logic [dataW-1:0] mbist_din_0;
+    logic [dataW-1:0] mbist_din_1;
     logic [dataW-1:0] mbist_din;
     logic [dataW-1:0] mbist_dout;
     
@@ -75,11 +83,10 @@ module mbist
     assign re_n = mbist_en ? mbist_re_n : 1'b1;
     assign mbist_dout = mbist_en ? dout : '0;
 
-    assign mbist_addr_bwe = mbist_addr_counter; //To be replaced by better counter logic
     assign mbist_bwe = mbist_addr_bwe[bweW-1:0];
     assign mbist_addr = mbist_addr_bwe[cntW-1:bweW];
-    assign up_end = mbist_addr_bwe == (2**cntW-1);
-    assign down_end = mbist_addr_bwe == 0;
+    assign up_end = mbist_addr_counter == (2**cntW-1);
+    assign down_end = mbist_addr_counter == 0;
     assign state_end = mbist_state[2] ? down_end : up_end;
 
     assign mbist_sel = mbist_state[7] == 1'b1;
@@ -90,7 +97,7 @@ module mbist
     assign mbist_re_n = mbist_sel ? mbist_state[1] : 1'b1;
 
     assign data_in = mbist_sel ? mbist_state[0] : 1'b0;
-    assign mbist_din = data_in ? '1 : '0;
+    assign mbist_din = data_in ? mbist_din_1 : mbist_din_0;
 
     genvar x;
     generate
@@ -111,6 +118,48 @@ module mbist
     endgenerate
 
     //Instances
+    `ifndef COUNTERS
+    assign mbist_addr_bwe = mbist_addr_counter;
+    `else
+    reg [cntW-1:0] lfsr;
+    logic fb_up, fb_down;
+    assign fb_up =   (mbist_mode[3:0] == 4'hD) ? lfsr[14] ^ lfsr[6] ^ lfsr[3] ^ lfsr[0] ^ ~(|lfsr[cntW-2:0]) : 1'b0;
+    assign fb_down = (mbist_mode[3:0] == 4'hD) ? lfsr[7] ^ lfsr[4] ^ lfsr[1] ^ lfsr[0] ^ ~(|lfsr[cntW-1:1]) : 1'b0;
+    
+    // Address LFSR matching address counter
+    always @(posedge clk or negedge nres) begin
+      if (nres == 0) begin
+        lfsr <= '0;
+      end else begin
+        if (addr_cnt == 2'b11) begin
+          lfsr <= '0;
+        end else if (addr_cnt[0] == 1'b1) begin
+          lfsr <= {lfsr[cntW-2:0], fb_up};
+        end else if (addr_cnt[1] == 1'b1) begin
+          lfsr <= {fb_down, lfsr[cntW-1:1]};
+        end
+      end
+    end
+
+    count_transformer #(
+      .cntW(cntW)
+    ) CNT (
+      .counter(mbist_addr_counter),
+      .lfsr(lfsr),
+      .sel(mbist_mode[3:0]),
+      .addr_bwe(mbist_addr_bwe)
+    );
+    `endif
+
+    `ifndef WORDMBIST
+    assign mbist_end = 1'b1;
+    assign mbist_din_0 = '0;
+    assign mbist_din_1 = '1;
+    `else
+    assign mbist_end = 1'b1;
+    assign mbist_din_0 = 64'hAAAAAAAAAAAAAAAA;
+    assign mbist_din_1 = 64'h5555555555555555;
+    `endif
 
     // Processes
   //------------------------------- Sequential ------------------------------
@@ -288,7 +337,10 @@ module mbist
           8'b10001000: begin // M4.5 - up r0
             if (mbist_en == 1'b0) mbist_state <= 8'h00;
             else if (state_end == 1'b1) begin
-              mbist_state <= 8'h01;
+              if (mbist_end == 1'b1)
+                mbist_state <= 8'h01;
+              else
+                mbist_state <= 8'b10000000;
             end else begin
               mbist_state <= 8'b10000001;
             end
@@ -355,3 +407,51 @@ module mbist
     end
 
 endmodule
+
+
+
+`ifdef COUNTERS
+module count_transformer
+  #(
+    parameter int cntW = 8
+  ) (
+    input  logic [cntW-1:0] counter,
+    input  logic [cntW-1:0] lfsr,
+    input  logic      [3:0] sel,
+    output logic [cntW-1:0] addr_bwe
+  );
+
+genvar x;
+generate
+  for (x = 0; x < cntW; x = x + 1) begin : gen_addr_bwe
+    always @(*) begin
+      if (sel < 4'hB) begin // CSx = Column Shift x = sel
+        if (x+sel < cntW)
+          addr_bwe[x] = counter[x+sel];
+        else
+          addr_bwe[x] = counter[x+sel-cntW];
+
+      end else if (sel == 4'hB) begin // AC = Address Compliment
+        if (x == cntW-1)
+          addr_bwe[x] = counter[0];
+        else
+          addr_bwe[x] = counter[0] ^ counter[x+1];
+
+      end else if (sel == 4'hC) begin // GC = Gray Code
+        if (x == cntW-1)
+          addr_bwe[x] = counter[x];
+        else
+          addr_bwe[x] = counter[x] ^ counter[x+1];
+
+      end else if (sel == 4'hD) begin // LFSR
+        addr_bwe[x] = lfsr[x];
+
+      end else begin // L = Linear (Default)
+        addr_bwe[x] = counter[x];
+      end
+    end
+  end
+endgenerate
+
+endmodule
+`endif

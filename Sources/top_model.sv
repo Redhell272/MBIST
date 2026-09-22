@@ -36,6 +36,7 @@ module top_model
     (* keep, dont_touch = "true" *) input  logic             mem2_re_n,
     (* keep, dont_touch = "true" *) output logic [dataW-1:0] mem2_dout,
     //MEM1 MBIST Interface
+    (* keep, dont_touch = "true" *) input  logic                                    [3:0] mem1_mbist_mode,
     (* keep, dont_touch = "true" *) input  logic                       [mem_sections-1:0] mem1_mbist_en,
     (* keep, dont_touch = "true" *) output logic       [(mem_sections*parallel_mems)-1:0] mem1_mbist_fault,
     (* keep, dont_touch = "true" *) output logic     [(mem_sections*parallel_mems*8)-1:0] mem1_mbist_fault_state,
@@ -45,6 +46,7 @@ module top_model
     (* keep, dont_touch = "true" *) output logic       [(mem_sections*parallel_mems)-1:0] mem1_mbist_fault_expc,
     (* keep, dont_touch = "true" *) output logic                       [mem_sections-1:0] mem1_mbist_done,
     //MEM2 MBIST Interface
+    (* keep, dont_touch = "true" *) input  logic                                    [3:0] mem2_mbist_mode,
     (* keep, dont_touch = "true" *) input  logic                       [mem_sections-1:0] mem2_mbist_en,
     (* keep, dont_touch = "true" *) output logic       [(mem_sections*parallel_mems)-1:0] mem2_mbist_fault,
     (* keep, dont_touch = "true" *) output logic     [(mem_sections*parallel_mems*8)-1:0] mem2_mbist_fault_state,
@@ -84,6 +86,7 @@ module top_model
       .re_n(mem1_re_n),
       .dout(mem1_dout),
       //MBIST Interface
+      .mbist_mode(mem1_mbist_mode),
       .mbist_en(mem1_mbist_en),
       .mbist_fault(mem1_mbist_fault),
       .mbist_fault_state(mem1_mbist_fault_state),
@@ -123,6 +126,7 @@ module top_model
       .re_n(mem2_re_n),
       .dout(mem2_dout),
       //MBIST Interface
+      .mbist_mode(mem2_mbist_mode),
       .mbist_en(mem2_mbist_en),
       .mbist_fault(mem2_mbist_fault),
       .mbist_fault_state(mem2_mbist_fault_state),
