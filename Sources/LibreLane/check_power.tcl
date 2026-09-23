@@ -1,29 +1,15 @@
+
+read_liberty "./../../../../../../.ciel/ciel/sky130/versions/8afc8346a57fe1ab7934ba5a6056ea8b43078e71/sky130A/libs.ref/sky130_fd_sc_hd/lib/sky130_fd_sc_hd__tt_025C_1v80.lib"
+read_liberty "./../../../../../../sky130_sram_macros/sky130_sram_4kbyte_1rw1r_32x1024_8/sky130_sram_4kbyte_1rw1r_32x1024_8_TT_1p8V_25C.lib"
+read_db "./final/odb/top_model.odb"
+read_sdc "./final/sdc/top_model.sdc"
+
 puts ""
 puts "================================================================"
 puts ""
-puts "Checking Power..."
+puts "  Power Breakdown Summary:"
 puts ""
-puts "================================================================"
-puts ""
-
-# 1. Propagate your SDC clock constraints to establish the base frequency (e.g. 50MHz or 100MHz)
-# (Ensure your config's SDC path is correctly pointed to here)
-read_sdc ./final/sdc/top_model.sdc
-
-# 2. Inject a standard default toggle activity rate across all unannotated nets
-# This tells the tool that pins toggle on 10% of all clock cycles (a standard industry estimation)
-set_driving_cell -lib_cell sky130_fd_sc_hd__inv_1 [all_inputs]
-set_data_check -setup 0.0 [all_outputs]
-set_power_activity -input -activity 0.1
-
-# 3. Explicitly force a toggle rate directly onto your 32 SRAM clock input pins
-# This ensures OpenSTA knows the memory internal clock trees are swinging at full speed
-set_power_activity -pins [get_pins -hierarchical *sram_macro/clk0] -activity 1.0
-
-# 4. Execute the power extraction loop
 report_power
-report_power -hierarchy
-
 puts ""
 puts "================================================================"
 puts ""
