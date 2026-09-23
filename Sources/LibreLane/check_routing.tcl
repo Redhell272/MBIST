@@ -17,6 +17,11 @@ if {$routing_status} {
 	puts "  INCOMPLETE"
 }
 
+
+
+puts ""
+puts "Routed wire length by module:"
+
 set module_lengths [dict create]
 set routed_net_names {}
 set net_module_names [dict create]
@@ -32,14 +37,27 @@ foreach net [[ord::get_db_block] getNets] {
 	foreach iterm [$net getITerms] {
 		set inst [$iterm getInst]
 		set inst_name [$inst getName]
-		if {[regexp {^([^.]+)\.} $inst_name -> module_name]} {
-			if {[lsearch -exact $module_names $module_name] < 0} {
+
+		# Extract the deep hierarchical path up to the module container name.
+		if {[regexp {^(.*)\.[^.]+$} $inst_name -> full_hierarchy_path]} {
+			
+            # Match for MBIST and SRAM instances
+			if {[string match -nocase "*mbist*" $full_hierarchy_path]} {
+				set module_name "MBIST"
+			} elseif {[string match -nocase "*sram_macro*" $full_hierarchy_path] || [[$inst getMaster] getType] eq "BLOCK"} {
+				set module_name "SRAM"
+			} else {
+				# Fallback to the top-level MEMx label for everything else
+				regexp {^([^.]+)\.} $inst_name -> module_name
+			}
+			
+			if {[lsearch -exact $module_names $module_name] < 0 && $module_name ne ""} {
 				lappend module_names $module_name
 			}
 		}
 	}
 	if {[llength $module_names] == 0} {
-		set module_label OTHER
+		set module_label Z.OTHER
 	} else {
 		set module_label [join [lsort $module_names] "+"]
 	}
@@ -60,7 +78,7 @@ while {[gets $report_channel line] >= 0} {
 	if {[dict exists $net_module_names $net_name]} {
 		set module_key [dict get $net_module_names $net_name]
 	} else {
-		set module_key OTHER
+		set module_key Z.OTHER
 	}
 
 	if {[dict exists $module_lengths $module_key]} {
@@ -72,11 +90,12 @@ while {[gets $report_channel line] >= 0} {
 }
 close $report_channel
 
-puts ""
-puts "Routed wire length by module:"
 foreach module_name [lsort [dict keys $module_lengths]] {
-	puts [format "  %-16s %.2fum" $module_name [dict get $module_lengths $module_name]]
+	puts [format "  %-12s %.2fum" $module_name [dict get $module_lengths $module_name]]
 }
+
+
+
 puts ""
 report_wire_length -net * -detailed_route -summary
 puts ""
