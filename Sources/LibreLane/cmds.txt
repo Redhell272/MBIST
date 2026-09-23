@@ -11,5 +11,6 @@ librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --flow Ope
 
 cd ../my_designs/MBIST/Sources/LibreLane/runs/RUN_
 openroad -exit -no_init ./../../check_area.tcl
+openroad -exit -no_init ./../../check_routing.tcl
 openroad -exit -no_init ./../../check_power.tcl
 cd ~/librelane
