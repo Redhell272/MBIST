@@ -17,7 +17,7 @@
   "DIE_AREA": [0, 0, 6800, 3500],
   "CORE_AREA": [10, 10, 6790, 3490],
 
-  "FP_PIN_ORDER_CFG": "dir::pin_order.cfg",
+  "IO_PIN_ORDER_CFG": "dir::pin_order.cfg",
 
   "VDD_NETS": ["VPWR"],
   "GND_NETS": ["VGND"],
@@ -30,24 +30,23 @@
   "RSZ_CORNERS": ["nom_tt_025C_1v80"],
   "CTS_CORNERS": ["nom_tt_025C_1v80"],
   "STA_CORNERS": ["nom_tt_025C_1v80"],
-  "EXTRA_CORNERS": [],
 
-    "SYNTH_HIERARCHY_MODE": "deferred_flatten",
+  "SYNTH_HIERARCHY_MODE": "deferred_flatten",
 
-  "GRT_ANT_ITERS": 1,
+  "LVS_FLATTEN_CELLS": [],
+  "NETGEN_LVS_OPTIONS": "-b -json",
+  "NETGEN_SETUP_FILE": "dir::lvs_setup.tcl",
+
+  "GRT_ANTENNA_REPAIR_ITERS": 1,
 
   "RUN_KLAYOUT_XOR": false,
   "KLAYOUT_XOR_IGNORE_LAYERS": ["isram", "poly", "diff"],
 
   "MAGIC_WRITE_FULL_LEF": false,
-  "MAGIC_GENERATE_MAGLEF": true,
   
   "MAGIC_EXT_ABSTRACT_CELLS": ["sky130_sram_4kbyte_1rw1r_32x1024_8"],
   "EXTRA_SPICE_MODELS": ["dir::../../../../sky130_sram_macros/sky130_sram_4kbyte_1rw1r_32x1024_8/sky130_sram_4kbyte_1rw1r_32x1024_8.sp"],
-
-  "LVS_EXTRA_NETLISTS": ["dir::../../../../sky130_sram_macros/sky130_sram_4kbyte_1rw1r_32x1024_8/sky130_sram_4kbyte_1rw1r_32x1024_8.v"],
-  "LVS_FLATTEN_CELLS": [],
-  "LVS_CONNECT_BY_NAME": true,
+  "EXTRA_VERILOG_MODELS": ["dir::../../../../sky130_sram_macros/sky130_sram_4kbyte_1rw1r_32x1024_8/sky130_sram_4kbyte_1rw1r_32x1024_8.v"],
 
   "MACROS": {
       "sky130_sram_4kbyte_1rw1r_32x1024_8": {
