@@ -43,7 +43,6 @@ module top_model
     (* keep, dont_touch = "true" *) output logic [(mem_sections*parallel_mems*addrW)-1:0] mem1_mbist_fault_addr,
     (* keep, dont_touch = "true" *) output logic               [(mem_sections*dataW)-1:0] mem1_mbist_fault_data,
     (* keep, dont_touch = "true" *) output logic               [(mem_sections*dataW)-1:0] mem1_mbist_fault_dout,
-    (* keep, dont_touch = "true" *) output logic       [(mem_sections*parallel_mems)-1:0] mem1_mbist_fault_expc,
     (* keep, dont_touch = "true" *) output logic                       [mem_sections-1:0] mem1_mbist_done,
     //MEM2 MBIST Interface
     (* keep, dont_touch = "true" *) input  logic                                    [3:0] mem2_mbist_mode,
@@ -53,7 +52,6 @@ module top_model
     (* keep, dont_touch = "true" *) output logic [(mem_sections*parallel_mems*addrW)-1:0] mem2_mbist_fault_addr,
     (* keep, dont_touch = "true" *) output logic               [(mem_sections*dataW)-1:0] mem2_mbist_fault_data,
     (* keep, dont_touch = "true" *) output logic               [(mem_sections*dataW)-1:0] mem2_mbist_fault_dout,
-    (* keep, dont_touch = "true" *) output logic       [(mem_sections*parallel_mems)-1:0] mem2_mbist_fault_expc,
     (* keep, dont_touch = "true" *) output logic                       [mem_sections-1:0] mem2_mbist_done
   );
 
@@ -93,7 +91,6 @@ module top_model
       .mbist_fault_addr(mem1_mbist_fault_addr),
       .mbist_fault_data(mem1_mbist_fault_data),
       .mbist_fault_dout(mem1_mbist_fault_dout),
-      .mbist_fault_expc(mem1_mbist_fault_expc),
       .mbist_done(mem1_mbist_done)
     );
 
@@ -133,7 +130,6 @@ module top_model
       .mbist_fault_addr(mem2_mbist_fault_addr),
       .mbist_fault_data(mem2_mbist_fault_data),
       .mbist_fault_dout(mem2_mbist_fault_dout),
-      .mbist_fault_expc(mem2_mbist_fault_expc),
       .mbist_done(mem2_mbist_done)
     );
 

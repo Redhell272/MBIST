@@ -34,7 +34,6 @@ module memory_model
     output logic [(mem_sections*parallel_mems*addrW)-1:0] mbist_fault_addr,
     output logic               [(mem_sections*dataW)-1:0] mbist_fault_data,
     output logic               [(mem_sections*dataW)-1:0] mbist_fault_dout,
-    output logic       [(mem_sections*parallel_mems)-1:0] mbist_fault_expc,
     output logic                       [mem_sections-1:0] mbist_done
   );
 
@@ -104,7 +103,6 @@ module memory_model
           .mbist_fault_addr(mbist_fault_addr[(parallel_mems*addrW*(x+1))-1:(parallel_mems*addrW*x)]),
           .mbist_fault_data(mbist_fault_data[              (dataW*(x+1))-1:(dataW*x)]),
           .mbist_fault_dout(mbist_fault_dout[              (dataW*(x+1))-1:(dataW*x)]),
-          .mbist_fault_expc(mbist_fault_expc[      (parallel_mems*(x+1))-1:(parallel_mems*x)]),
           .mbist_done(mbist_done[x]),
           //Memory Port
           .cs_n(mbist_cs_n),

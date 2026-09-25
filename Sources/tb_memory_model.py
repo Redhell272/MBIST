@@ -212,23 +212,33 @@ for fault in faults:
 mismatches = []
 for text in text_array[5 + n_faults:-3]:
     sect = int(text[0].split("-")[1].split("]")[0])
-    addr = int(text[6].split("=")[1], 16)
-    bit = int(text[7].split("=")[1], 16)
-    if bit != 0: bit = bit.bit_length() - 1
-    state = int(text[8].split("=")[1], 16)
-    dout = (int(text[9].split("=")[1], 16) >> bit) & 0x01
-    expc = int(text[10].split("=")[1])
+    state = int(text[6].split("=")[1], 16)
+    addr = int(text[7].split("=")[1], 16)
+    data = int(text[8].split("=")[1], 16)
+    dout = int(text[9].split("=")[1], 16)
 
     bit_offset = sect % parallel_mems
-    bit = bit + (bit_offset * mem_dataW)
 
-    found = False
-    for i in range(n_faults):
-        if faults[i][0] == [addr, bit]:
-            found = True
-            faults[i][1].append([state, dout, expc])
-    if not found:
-        mismatches.append([addr, bit, state, dout, expc])
+    n = 0
+    err = data ^ dout
+    while err != 0:
+        if err & 0x01:
+            bit = n + (bit_offset * mem_dataW)
+            expc = data & 0x01
+            out = dout & 0x01
+
+            found = False
+            for i in range(n_faults):
+                if faults[i][0] == [addr, bit]:
+                    found = True
+                    faults[i][1].append([state, out, expc])
+            if not found:
+                mismatches.append([addr, bit, state, out, expc])
+
+        n += 1
+        err = err >> 1
+        data = data >> 1
+        dout = dout >> 1
 
 
 # Print the fault detection results

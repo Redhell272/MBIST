@@ -1,6 +1,6 @@
 
 //`define COUNTERS
-//`define WORDMBIST
+`define WORDMBIST
 
 module mbist
   #(
@@ -22,7 +22,6 @@ module mbist
     output logic [(parallel_mems*addrW)-1:0] mbist_fault_addr,
     output logic               [(dataW)-1:0] mbist_fault_data,
     output logic               [(dataW)-1:0] mbist_fault_dout,
-    output logic         [parallel_mems-1:0] mbist_fault_expc,
     output logic                             mbist_done,
     //Memory Port
     output logic                 cs_n,
@@ -57,6 +56,7 @@ module mbist
     logic [bweW-1:0] mbist_bwe;
     logic [mem_dataW-1:0] mbist_bwe_n;
     logic [1:0] addr_cnt;
+    logic [cntW-1:0] addr_cnt_inc;
     logic       up_end;
     logic       down_end;
     logic       state_end;
@@ -85,9 +85,6 @@ module mbist
 
     assign mbist_bwe = mbist_addr_bwe[bweW-1:0];
     assign mbist_addr = mbist_addr_bwe[cntW-1:bweW];
-    assign up_end = mbist_addr_counter == (2**cntW-1);
-    assign down_end = mbist_addr_counter == 0;
-    assign state_end = mbist_state[2] ? down_end : up_end;
 
     assign mbist_sel = mbist_state[7] == 1'b1;
     assign mbist_done = mbist_state == 8'h01;
@@ -101,9 +98,6 @@ module mbist
 
     genvar x;
     generate
-      for (x = 0; x < mem_dataW; x = x + 1) begin : mbist_bwe_logic
-        assign mbist_bwe_n[x] = (mbist_bwe == x) ? 1'b0 : 1'b1;
-      end
       for (x = 0; x < parallel_mems; x = x + 1) begin : parallel_control
         assign bwe_n[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_en ? mbist_bwe_n : '1;
         assign mbist_sect[x] = (base_index + x) / parallel_mems;
@@ -111,9 +105,8 @@ module mbist
         assign mbist_fault[x] = mbist_sel && comp_en_d && ((mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d) != (mbist_din_d[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d));
         assign mbist_fault_state[(8*(x+1))-1:(8*x)] = mbist_fault[x] ? mbist_state_d : '0;
         assign mbist_fault_addr[(addrW*(x+1))-1:(addrW*x)] = {mbist_sect[x], mbist_fault[x] ? mbist_addr_d : '0};
-        assign mbist_fault_data[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? ~mbist_bwe_d : '0;
+        assign mbist_fault_data[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? mbist_din_d : '0;
         assign mbist_fault_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] : '0;
-        assign mbist_fault_expc[x] = mbist_fault[x] ? mbist_din_d[(mem_dataW*x)] : '0;
       end
     endgenerate
 
@@ -143,7 +136,7 @@ module mbist
 
     count_transformer #(
       .cntW(cntW)
-    ) CNT (
+    ) CNT_TF (
       .counter(mbist_addr_counter),
       .lfsr(lfsr),
       .sel(mbist_mode[3:0]),
@@ -152,13 +145,42 @@ module mbist
     `endif
 
     `ifndef WORDMBIST
+    assign addr_cnt_inc = 2'b01;
+    assign up_end = mbist_addr_counter == (2**cntW-1);
+    assign down_end = mbist_addr_counter == 0;
+    assign state_end = mbist_state[2] ? down_end : up_end;
+
+    genvar y;
+    generate
+      for (x = 0; x < mem_dataW; x = x + 1) begin : mbist_bwe_logic
+        assign mbist_bwe_n[x] = (mbist_bwe == x) ? 1'b0 : 1'b1;
+      end
+    endgenerate
+
     assign mbist_end = 1'b1;
     assign mbist_din_0 = '0;
     assign mbist_din_1 = '1;
     `else
-    assign mbist_end = 1'b1;
-    assign mbist_din_0 = 64'hAAAAAAAAAAAAAAAA;
-    assign mbist_din_1 = 64'h5555555555555555;
+    assign addr_cnt_inc = 2'b01 << bweW;
+    assign up_end = mbist_addr_counter == (2**mem_addrW-1) << bweW;
+    assign down_end = mbist_addr_counter == 0;
+    assign state_end = mbist_state[2] ? down_end : up_end;
+
+    assign mbist_bwe_n = '0;
+
+    db_generator #(
+      .dataW(dataW),
+      .end_state(8'b10001000),
+      .car_state(8'b10000000)
+    ) DB_GEN (
+      .clk(clk),
+      .nres(nres),
+      .mbist_state(mbist_state),
+      .state_end(state_end),
+      .mbist_end(mbist_end),
+      .mbist_din_0(mbist_din_0),
+      .mbist_din_1(mbist_din_1)
+    );
     `endif
 
     // Processes
@@ -189,9 +211,9 @@ module mbist
         if (addr_cnt == 2'b11) begin
           mbist_addr_counter <= '0;
         end else if (addr_cnt[0] == 1'b1) begin
-          mbist_addr_counter <= mbist_addr_counter + 1'b1;
+          mbist_addr_counter <= mbist_addr_counter + addr_cnt_inc;
         end else if (addr_cnt[1] == 1'b1) begin
-          mbist_addr_counter <= mbist_addr_counter - 1'b1;
+          mbist_addr_counter <= mbist_addr_counter - addr_cnt_inc;
         end
       end
     end
@@ -452,6 +474,62 @@ generate
     end
   end
 endgenerate
+
+endmodule
+`endif
+
+`ifdef WORDMBIST
+module db_generator
+  #(
+    parameter int dataW = 32,
+    parameter int end_state = 8'b10001000,
+    parameter int car_state = 8'b10000100
+  ) (
+    input  logic             clk,
+    input  logic             nres,
+    input  logic       [7:0] mbist_state,
+    input  logic             state_end,
+    output logic             mbist_end,
+    output logic [dataW-1:0] mbist_din_0,
+    output logic [dataW-1:0] mbist_din_1
+  );
+
+  reg         [1:0] db_state;
+  reg   [dataW-1:0] db_base_reg;
+  reg   [dataW-1:0] db_base_reg_d;
+  logic [dataW-1:0] db_base;
+
+  assign mbist_end = (db_state == 2'b11);
+  assign mbist_din_0 = (mbist_state == car_state) ? db_base_reg_d : db_base_reg;
+  assign mbist_din_1 = (mbist_state == car_state) ? ~db_base_reg_d : ~db_base_reg;
+
+  always @(posedge clk or negedge nres)
+    begin
+      if (nres == 0) begin
+        db_state <= 0;
+        db_base_reg <= '0;
+        db_base_reg_d <= '0;
+      end else begin
+        if (mbist_state == 8'h00) begin
+          db_state <= 0;
+          db_base_reg <= '0;
+          db_base_reg_d <= '0;
+        end else if (mbist_state == end_state && state_end == 1'b1) begin
+          db_state <= db_state + 1;
+          db_base_reg <= db_base;
+          db_base_reg_d <= db_base_reg;
+        end
+      end
+    end
+
+  always_comb begin
+    case (db_state)
+      2'b00:   db_base = 64'h5555555555555555;
+      2'b01:   db_base = 64'h3333333333333333;
+      2'b10:   db_base = 64'hF0F0F0F0F0F0F0F0;
+      default: db_base = '0;
+    endcase
+  end
 
 endmodule
 `endif
