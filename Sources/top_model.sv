@@ -13,9 +13,9 @@ module top_model
     //Simulation Logging
     input  integer log_fd,
     `else
-    //Power Synthesis
-    input  logic VDD,
-    input  logic GND,
+    //Synthesis Power Pins
+    inout VPWR,
+    inout VGND,
     `endif
     input  logic clk,
     input  logic nres,

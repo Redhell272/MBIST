@@ -3,7 +3,9 @@ nix-shell
 
 clear
 rm -rf ~/my_designs/MBIST/Sources/LibreLane/runs
-librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --skip KLayout.Render --skip KLayout.DRC --skip Magic.DRC --skip Checker.XOR
+librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --skip OpenROAD.RepairAntennas --skip KLayout.Render --skip KLayout.DRC --skip Magic.DRC --skip Checker.XOR
+
+librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --from Magic.SpiceExtraction --skip OpenROAD.RepairAntennas --skip KLayout.Render --skip KLayout.DRC --skip Magic.DRC --skip Checker.XOR
 
 librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --flow openinklayout
 -or-
@@ -11,4 +13,6 @@ librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --flow Ope
 
 cd ../my_designs/MBIST/Sources/LibreLane/runs/RUN_
 openroad -exit -no_init ./../../check_area.tcl
+openroad -exit -no_init ./../../check_routing.tcl
+openroad -exit -no_init ./../../check_power.tcl
 cd ~/librelane

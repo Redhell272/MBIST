@@ -1,0 +1,23 @@
+
+read_liberty "./../../../../../../.ciel/ciel/sky130/versions/8afc8346a57fe1ab7934ba5a6056ea8b43078e71/sky130A/libs.ref/sky130_fd_sc_hd/lib/sky130_fd_sc_hd__tt_025C_1v80.lib"
+read_liberty "./../../../../../../sky130_sram_macros/sky130_sram_4kbyte_1rw1r_32x1024_8/sky130_sram_4kbyte_1rw1r_32x1024_8_TT_1p8V_25C.lib"
+read_db "./final/odb/top_model.odb"
+read_sdc "./final/sdc/top_model.sdc"
+
+puts ""
+puts "================================================================"
+puts ""
+puts "Checking Final Power Estimation"
+puts ""
+puts "================================================================"
+puts ""
+report_power
+puts ""
+puts "IR Drop Reports:"
+puts ""
+analyze_power_grid -net VPWR -voltage_file "./56-openroad-irdropreport/net-VPWR.csv"
+puts ""
+analyze_power_grid -net VGND -voltage_file "./56-openroad-irdropreport/net-VGND.csv"
+puts ""
+puts "================================================================"
+puts ""

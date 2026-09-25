@@ -14,10 +14,20 @@
   "SIGNOFF_SDC_FILE": "dir::constraints.sdc",
 
   "FP_SIZING": "absolute",
-  "DIE_AREA": [0, 0, 6800, 3400],
-  "CORE_AREA": [10, 10, 6790, 3390],
+  "DIE_AREA": [0, 0, 6800, 3500],
+  "CORE_AREA": [10, 10, 6790, 3490],
 
-  "FP_PIN_ORDER_CFG": "dir::pin_order.cfg",
+  "IO_PIN_ORDER_CFG": "dir::pin_order.cfg",
+  "FP_IO_STRICT": true,
+
+  "SYNTH_HIERARCHY_MODE": "deferred_flatten",
+  "SYNTH_ABC_DFF": false,
+  "SYNTH_SHARE_RESOURCES": false,
+  
+  "DESIGN_REPAIR_BUFFER_OUTPUT_PORTS": true,
+  "DESIGN_REPAIR_BUFFER_INPUT_PORTS": true,
+  "DESIGN_REPAIR_TIE_FANOUT": false,
+  "DESIGN_REPAIR_TIE_SEPARATION": true,
 
   "VDD_NETS": ["VPWR"],
   "GND_NETS": ["VGND"],
@@ -30,24 +40,19 @@
   "RSZ_CORNERS": ["nom_tt_025C_1v80"],
   "CTS_CORNERS": ["nom_tt_025C_1v80"],
   "STA_CORNERS": ["nom_tt_025C_1v80"],
-  "EXTRA_CORNERS": [],
 
-    "SYNTH_HIERARCHY_MODE": "deferred_flatten",
-
-  "GRT_ANT_ITERS": 1,
+  "GRT_ANTENNA_REPAIR_ITERS": 1,
 
   "RUN_KLAYOUT_XOR": false,
   "KLAYOUT_XOR_IGNORE_LAYERS": ["isram", "poly", "diff"],
 
   "MAGIC_WRITE_FULL_LEF": false,
-  "MAGIC_GENERATE_MAGLEF": true,
   
+  "LVS_FLATTEN_CELLS": ["top_model"],
+
   "MAGIC_EXT_ABSTRACT_CELLS": ["sky130_sram_4kbyte_1rw1r_32x1024_8"],
   "EXTRA_SPICE_MODELS": ["dir::../../../../sky130_sram_macros/sky130_sram_4kbyte_1rw1r_32x1024_8/sky130_sram_4kbyte_1rw1r_32x1024_8.sp"],
-
-  "LVS_EXTRA_NETLISTS": ["dir::../../../../sky130_sram_macros/sky130_sram_4kbyte_1rw1r_32x1024_8/sky130_sram_4kbyte_1rw1r_32x1024_8.v"],
-  "LVS_FLATTEN_CELLS": [],
-  "LVS_CONNECT_BY_NAME": true,
+  "EXTRA_VERILOG_MODELS": ["dir::../../../../sky130_sram_macros/sky130_sram_4kbyte_1rw1r_32x1024_8/sky130_sram_4kbyte_1rw1r_32x1024_8.v"],
 
   "MACROS": {
       "sky130_sram_4kbyte_1rw1r_32x1024_8": {
@@ -58,38 +63,38 @@
               "nom_tt_025C_1v80": ["dir::../../../../sky130_sram_macros/sky130_sram_4kbyte_1rw1r_32x1024_8/sky130_sram_4kbyte_1rw1r_32x1024_8_TT_1p8V_25C.lib"]
           },
           "instances": {
-              "MEM1.mem_sect[0].mem_inst[0].MEM.SRAM.sram_macro": {"location": [130,125], "orientation": "S"},
-              "MEM1.mem_sect[1].mem_inst[0].MEM.SRAM.sram_macro": {"location": [980,125], "orientation": "S"},
-              "MEM1.mem_sect[2].mem_inst[0].MEM.SRAM.sram_macro": {"location": [1830,125], "orientation": "S"},
-              "MEM1.mem_sect[3].mem_inst[0].MEM.SRAM.sram_macro": {"location": [2680,125], "orientation": "S"},
-              "MEM1.mem_sect[0].mem_inst[1].MEM.SRAM.sram_macro": {"location": [445,1005], "orientation": "N"},
-              "MEM1.mem_sect[1].mem_inst[1].MEM.SRAM.sram_macro": {"location": [1190,1005], "orientation": "N"},
-              "MEM1.mem_sect[2].mem_inst[1].MEM.SRAM.sram_macro": {"location": [1935,1005], "orientation": "N"},
-              "MEM1.mem_sect[3].mem_inst[1].MEM.SRAM.sram_macro": {"location": [2680,1005], "orientation": "N"},
-              "MEM1.mem_sect[4].mem_inst[0].MEM.SRAM.sram_macro": {"location": [445,1725], "orientation": "S"},
-              "MEM1.mem_sect[5].mem_inst[0].MEM.SRAM.sram_macro": {"location": [1190,1725], "orientation": "S"},
-              "MEM1.mem_sect[6].mem_inst[0].MEM.SRAM.sram_macro": {"location": [1935,1725], "orientation": "S"},
-              "MEM1.mem_sect[7].mem_inst[0].MEM.SRAM.sram_macro": {"location": [2680,1725], "orientation": "S"},
-              "MEM1.mem_sect[4].mem_inst[1].MEM.SRAM.sram_macro": {"location": [130,2605], "orientation": "N"},
-              "MEM1.mem_sect[5].mem_inst[1].MEM.SRAM.sram_macro": {"location": [980,2605], "orientation": "N"},
-              "MEM1.mem_sect[6].mem_inst[1].MEM.SRAM.sram_macro": {"location": [1830,2605], "orientation": "N"},
-              "MEM1.mem_sect[7].mem_inst[1].MEM.SRAM.sram_macro": {"location": [2680,2605], "orientation": "N"},
-              "MEM2.mem_sect[0].mem_inst[0].MEM.SRAM.sram_macro": {"location": [5975,125], "orientation": "S"},
-              "MEM2.mem_sect[1].mem_inst[0].MEM.SRAM.sram_macro": {"location": [5125,125], "orientation": "S"},
-              "MEM2.mem_sect[2].mem_inst[0].MEM.SRAM.sram_macro": {"location": [4275,125], "orientation": "S"},
-              "MEM2.mem_sect[3].mem_inst[0].MEM.SRAM.sram_macro": {"location": [3425,125], "orientation": "S"},
-              "MEM2.mem_sect[0].mem_inst[1].MEM.SRAM.sram_macro": {"location": [5660,1005], "orientation": "N"},
-              "MEM2.mem_sect[1].mem_inst[1].MEM.SRAM.sram_macro": {"location": [4915,1005], "orientation": "N"},
-              "MEM2.mem_sect[2].mem_inst[1].MEM.SRAM.sram_macro": {"location": [4170,1005], "orientation": "N"},
-              "MEM2.mem_sect[3].mem_inst[1].MEM.SRAM.sram_macro": {"location": [3425,1005], "orientation": "N"},
-              "MEM2.mem_sect[4].mem_inst[0].MEM.SRAM.sram_macro": {"location": [5660,1725], "orientation": "S"},
-              "MEM2.mem_sect[5].mem_inst[0].MEM.SRAM.sram_macro": {"location": [4915,1725], "orientation": "S"},
-              "MEM2.mem_sect[6].mem_inst[0].MEM.SRAM.sram_macro": {"location": [4170,1725], "orientation": "S"},
-              "MEM2.mem_sect[7].mem_inst[0].MEM.SRAM.sram_macro": {"location": [3425,1725], "orientation": "S"},
-              "MEM2.mem_sect[4].mem_inst[1].MEM.SRAM.sram_macro": {"location": [5975,2605], "orientation": "N"},
-              "MEM2.mem_sect[5].mem_inst[1].MEM.SRAM.sram_macro": {"location": [5125,2605], "orientation": "N"},
-              "MEM2.mem_sect[6].mem_inst[1].MEM.SRAM.sram_macro": {"location": [4275,2605], "orientation": "N"},
-              "MEM2.mem_sect[7].mem_inst[1].MEM.SRAM.sram_macro": {"location": [3425,2605], "orientation": "N"}
+              "MEM1.mem_sect[0].mem_inst[0].MEM.SRAM.sram_macro": {"location": [130,175], "orientation": "S"},
+              "MEM1.mem_sect[1].mem_inst[0].MEM.SRAM.sram_macro": {"location": [980,175], "orientation": "S"},
+              "MEM1.mem_sect[2].mem_inst[0].MEM.SRAM.sram_macro": {"location": [1830,175], "orientation": "S"},
+              "MEM1.mem_sect[3].mem_inst[0].MEM.SRAM.sram_macro": {"location": [2680,175], "orientation": "S"},
+              "MEM1.mem_sect[0].mem_inst[1].MEM.SRAM.sram_macro": {"location": [445,1055], "orientation": "N"},
+              "MEM1.mem_sect[1].mem_inst[1].MEM.SRAM.sram_macro": {"location": [1190,1055], "orientation": "N"},
+              "MEM1.mem_sect[2].mem_inst[1].MEM.SRAM.sram_macro": {"location": [1935,1055], "orientation": "N"},
+              "MEM1.mem_sect[3].mem_inst[1].MEM.SRAM.sram_macro": {"location": [2680,1055], "orientation": "N"},
+              "MEM1.mem_sect[4].mem_inst[0].MEM.SRAM.sram_macro": {"location": [445,1775], "orientation": "S"},
+              "MEM1.mem_sect[5].mem_inst[0].MEM.SRAM.sram_macro": {"location": [1190,1775], "orientation": "S"},
+              "MEM1.mem_sect[6].mem_inst[0].MEM.SRAM.sram_macro": {"location": [1935,1775], "orientation": "S"},
+              "MEM1.mem_sect[7].mem_inst[0].MEM.SRAM.sram_macro": {"location": [2680,1775], "orientation": "S"},
+              "MEM1.mem_sect[4].mem_inst[1].MEM.SRAM.sram_macro": {"location": [130,2655], "orientation": "N"},
+              "MEM1.mem_sect[5].mem_inst[1].MEM.SRAM.sram_macro": {"location": [980,2655], "orientation": "N"},
+              "MEM1.mem_sect[6].mem_inst[1].MEM.SRAM.sram_macro": {"location": [1830,2655], "orientation": "N"},
+              "MEM1.mem_sect[7].mem_inst[1].MEM.SRAM.sram_macro": {"location": [2680,2655], "orientation": "N"},
+              "MEM2.mem_sect[0].mem_inst[0].MEM.SRAM.sram_macro": {"location": [5975,175], "orientation": "S"},
+              "MEM2.mem_sect[1].mem_inst[0].MEM.SRAM.sram_macro": {"location": [5125,175], "orientation": "S"},
+              "MEM2.mem_sect[2].mem_inst[0].MEM.SRAM.sram_macro": {"location": [4275,175], "orientation": "S"},
+              "MEM2.mem_sect[3].mem_inst[0].MEM.SRAM.sram_macro": {"location": [3425,175], "orientation": "S"},
+              "MEM2.mem_sect[0].mem_inst[1].MEM.SRAM.sram_macro": {"location": [5660,1055], "orientation": "N"},
+              "MEM2.mem_sect[1].mem_inst[1].MEM.SRAM.sram_macro": {"location": [4915,1055], "orientation": "N"},
+              "MEM2.mem_sect[2].mem_inst[1].MEM.SRAM.sram_macro": {"location": [4170,1055], "orientation": "N"},
+              "MEM2.mem_sect[3].mem_inst[1].MEM.SRAM.sram_macro": {"location": [3425,1055], "orientation": "N"},
+              "MEM2.mem_sect[4].mem_inst[0].MEM.SRAM.sram_macro": {"location": [5660,1775], "orientation": "S"},
+              "MEM2.mem_sect[5].mem_inst[0].MEM.SRAM.sram_macro": {"location": [4915,1775], "orientation": "S"},
+              "MEM2.mem_sect[6].mem_inst[0].MEM.SRAM.sram_macro": {"location": [4170,1775], "orientation": "S"},
+              "MEM2.mem_sect[7].mem_inst[0].MEM.SRAM.sram_macro": {"location": [3425,1775], "orientation": "S"},
+              "MEM2.mem_sect[4].mem_inst[1].MEM.SRAM.sram_macro": {"location": [5975,2655], "orientation": "N"},
+              "MEM2.mem_sect[5].mem_inst[1].MEM.SRAM.sram_macro": {"location": [5125,2655], "orientation": "N"},
+              "MEM2.mem_sect[6].mem_inst[1].MEM.SRAM.sram_macro": {"location": [4275,2655], "orientation": "N"},
+              "MEM2.mem_sect[7].mem_inst[1].MEM.SRAM.sram_macro": {"location": [3425,2655], "orientation": "N"}
           }
       }
   }
