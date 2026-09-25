@@ -1,6 +1,6 @@
 
 //`define COUNTERS
-`define WORDMBIST
+//`define WORDMBIST
 
 module mbist
   #(
