@@ -15,7 +15,7 @@ module mbist
     input  logic nres,
     //MBIST Interface
     input  logic                             mbist_en,
-    input  logic                       [3:0] mbist_mode,
+    input  logic                       [4:0] mbist_mode,
     output logic                             mbist_sel,
     output logic         [parallel_mems-1:0] mbist_fault,
     output logic     [(parallel_mems*8)-1:0] mbist_fault_state,
@@ -177,9 +177,11 @@ module mbist
       .nres(nres),
       .mbist_state(mbist_state),
       .state_end(state_end),
-      .mbist_end(mbist_end),
+      .mbist_addr0(mbist_addr[0]),
+      .alt_mode(mbist_mode[4]),
       .mbist_din_0(mbist_din_0),
-      .mbist_din_1(mbist_din_1)
+      .mbist_din_1(mbist_din_1),
+      .mbist_end(mbist_end)
     );
     `endif
 
@@ -483,25 +485,32 @@ module db_generator
   #(
     parameter int dataW = 32,
     parameter int end_state = 8'b10001000,
-    parameter int car_state = 8'b10000100
+    parameter int car_state = 8'b10000000
   ) (
     input  logic             clk,
     input  logic             nres,
     input  logic       [7:0] mbist_state,
     input  logic             state_end,
-    output logic             mbist_end,
+    input  logic             mbist_addr0,
+    input  logic             alt_mode,
     output logic [dataW-1:0] mbist_din_0,
-    output logic [dataW-1:0] mbist_din_1
+    output logic [dataW-1:0] mbist_din_1,
+    output logic             mbist_end
   );
 
   reg         [1:0] db_state;
   reg   [dataW-1:0] db_base_reg;
   reg   [dataW-1:0] db_base_reg_d;
   logic [dataW-1:0] db_base;
+  logic [dataW-1:0] din_0;
+  logic [dataW-1:0] din_1;
 
+  assign din_0 = (mbist_state == car_state) ? db_base_reg_d : db_base_reg;
+  assign din_1 = (mbist_state == car_state) ? ~db_base_reg_d : ~db_base_reg;
+
+  assign mbist_din_0 = (alt_mode & mbist_addr0) ? din_0 : din_1;
+  assign mbist_din_1 = (alt_mode & mbist_addr0) ? din_1 : din_0;
   assign mbist_end = (db_state == 2'b11);
-  assign mbist_din_0 = (mbist_state == car_state) ? db_base_reg_d : db_base_reg;
-  assign mbist_din_1 = (mbist_state == car_state) ? ~db_base_reg_d : ~db_base_reg;
 
   always @(posedge clk or negedge nres)
     begin

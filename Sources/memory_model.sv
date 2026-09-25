@@ -27,7 +27,7 @@ module memory_model
     input  logic             re_n,
     output logic [dataW-1:0] dout,
     //MBIST Interface
-    input  logic                                    [3:0] mbist_mode,
+    input  logic                                    [4:0] mbist_mode,
     input  logic                       [mem_sections-1:0] mbist_en,
     output logic       [(mem_sections*parallel_mems)-1:0] mbist_fault,
     output logic     [(mem_sections*parallel_mems*8)-1:0] mbist_fault_state,

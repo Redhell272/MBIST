@@ -2,7 +2,7 @@
 //Test Logic Switch
 module testbench;
 
-  localparam int mbist_mode = 13;
+  localparam int mbist_mode = 5'b11100;
 
   localparam int fault_count = 64;
   localparam int random_seed = 42;
@@ -37,7 +37,7 @@ module testbench;
   reg              mem2_re_n=1'b1;
   wire [dataW-1:0] mem2_dout;
 
-  reg                                     [3:0] mem1_mbist_mode=mbist_mode;
+  reg                                     [4:0] mem1_mbist_mode=mbist_mode;
   reg                        [mem_sections-1:0] mem1_mbist_en='0;
   wire       [(mem_sections*parallel_mems)-1:0] mem1_mbist_fault;
   wire     [(mem_sections*parallel_mems*8)-1:0] mem1_mbist_fault_state;
@@ -46,7 +46,7 @@ module testbench;
   wire               [(mem_sections*dataW)-1:0] mem1_mbist_fault_dout;
   wire                       [mem_sections-1:0] mem1_mbist_done;
 
-  reg                                     [3:0] mem2_mbist_mode=mbist_mode;
+  reg                                     [4:0] mem2_mbist_mode=mbist_mode;
   reg                        [mem_sections-1:0] mem2_mbist_en='0;
   wire       [(mem_sections*parallel_mems)-1:0] mem2_mbist_fault;
   wire     [(mem_sections*parallel_mems*8)-1:0] mem2_mbist_fault_state;
