@@ -1,5 +1,3 @@
-`define SYNTHESIS
-
 module top_model
   #(
     parameter int parallel_mems = 2,    //GOTO: /memory_model
