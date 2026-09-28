@@ -1,10 +1,16 @@
 
 # LFSR Checker for Up and Down Counting Directions
 # Designed for Fibonacci Style LFSR counter with reverse shifting for down counting (shift left = up, shift right = down)
-# Provide length [l], polynomial (tab positions) [p], and initial value [val]:
-l = 15
-up_p = [15,7,4,1]
-down_p = [8,5,2,1]
+# Provide length [l], polynomial (tab positions) [p], and initial value [val]
+# Example:
+# l = 15
+# up_p = [15,7,4,1]
+# down_p = [8,5,2,1]
+# val = 0x00
+
+l = 10
+up_p = [10,9,4,1]
+down_p = [10,5,2,1]
 val = 0x00
 
 

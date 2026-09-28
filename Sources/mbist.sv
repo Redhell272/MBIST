@@ -1,6 +1,6 @@
 
-//`define COUNTERS
-//`define WORDMBIST
+`define COUNTERS
+`define WORDMBIST
 
 module mbist
   #(
@@ -110,80 +110,88 @@ module mbist
       end
     endgenerate
 
+
+
     //Instances
     `ifndef COUNTERS
-    assign mbist_addr_bwe = mbist_addr_counter;
+      assign mbist_addr_bwe = mbist_addr_counter;
     `else
-    reg [cntW-1:0] lfsr;
-    logic fb_up, fb_down;
-    assign fb_up =   (mbist_mode[3:0] == 4'hD) ? lfsr[14] ^ lfsr[6] ^ lfsr[3] ^ lfsr[0] ^ ~(|lfsr[cntW-2:0]) : 1'b0;
-    assign fb_down = (mbist_mode[3:0] == 4'hD) ? lfsr[7] ^ lfsr[4] ^ lfsr[1] ^ lfsr[0] ^ ~(|lfsr[cntW-1:1]) : 1'b0;
-    
-    // Address LFSR matching address counter
-    always @(posedge clk or negedge nres) begin
-      if (nres == 0) begin
-        lfsr <= '0;
-      end else begin
-        if (addr_cnt == 2'b11) begin
-          lfsr <= '0;
-        end else if (addr_cnt[0] == 1'b1) begin
-          lfsr <= {lfsr[cntW-2:0], fb_up};
-        end else if (addr_cnt[1] == 1'b1) begin
-          lfsr <= {fb_down, lfsr[cntW-1:1]};
-        end
-      end
-    end
-
-    count_transformer #(
-      .cntW(cntW)
-    ) CNT_TF (
-      .counter(mbist_addr_counter),
-      .lfsr(lfsr),
-      .sel(mbist_mode[3:0]),
-      .addr_bwe(mbist_addr_bwe)
-    );
+      `ifndef WORDMBIST
+        count_transformer #(
+          .cntW(cntW),
+          .tab1(15),
+          .tab2(7),
+          .tab3(4),
+          .tab4(1)
+        ) CNT_TF (
+          .clk(clk),
+          .nres(nres),
+          .counter(mbist_addr_counter),
+          .lfsr_dir(addr_cnt),
+          .sel(mbist_mode[3:0]),
+          .addr_bwe(mbist_addr_bwe)
+        );
+      `else
+        count_transformer #(
+          .cntW(mem_addrW),
+          .tab1(10),
+          .tab2(9),
+          .tab3(4),
+          .tab4(1)
+        ) CNT_TF (
+          .clk(clk),
+          .nres(nres),
+          .counter(mbist_addr_counter[cntW-1:bweW]),
+          .lfsr_dir(addr_cnt),
+          .sel(mbist_mode[3:0]),
+          .addr_bwe(mbist_addr_bwe[cntW-1:bweW])
+        );
+        assign mbist_addr_bwe[bweW-1:0] = mbist_addr_counter[bweW-1:0];
+      `endif
     `endif
 
     `ifndef WORDMBIST
-    assign addr_cnt_inc = 2'b01;
-    assign up_end = mbist_addr_counter == (2**cntW-1);
-    assign down_end = mbist_addr_counter == 0;
-    assign state_end = mbist_state[2] ? down_end : up_end;
+      assign addr_cnt_inc = 2'b01;
+      assign up_end = mbist_addr_counter == (2**cntW-1);
+      assign down_end = mbist_addr_counter == 0;
+      assign state_end = mbist_state[2] ? down_end : up_end;
 
-    genvar y;
-    generate
-      for (x = 0; x < mem_dataW; x = x + 1) begin : mbist_bwe_logic
-        assign mbist_bwe_n[x] = (mbist_bwe == x) ? 1'b0 : 1'b1;
-      end
-    endgenerate
+      genvar y;
+      generate
+        for (x = 0; x < mem_dataW; x = x + 1) begin : mbist_bwe_logic
+          assign mbist_bwe_n[x] = (mbist_bwe == x) ? 1'b0 : 1'b1;
+        end
+      endgenerate
 
-    assign mbist_end = 1'b1;
-    assign mbist_din_0 = '0;
-    assign mbist_din_1 = '1;
+      assign mbist_end = 1'b1;
+      assign mbist_din_0 = '0;
+      assign mbist_din_1 = '1;
     `else
-    assign addr_cnt_inc = 2'b01 << bweW;
-    assign up_end = mbist_addr_counter == (2**mem_addrW-1) << bweW;
-    assign down_end = mbist_addr_counter == 0;
-    assign state_end = mbist_state[2] ? down_end : up_end;
+      assign addr_cnt_inc = 1'b1 << bweW;
+      assign up_end = mbist_addr_counter == (2**mem_addrW-1) << bweW;
+      assign down_end = mbist_addr_counter == 0;
+      assign state_end = mbist_state[2] ? down_end : up_end;
 
-    assign mbist_bwe_n = '0;
+      assign mbist_bwe_n = '0;
 
-    db_generator #(
-      .dataW(dataW),
-      .end_state(8'b10001000),
-      .car_state(8'b10000000)
-    ) DB_GEN (
-      .clk(clk),
-      .nres(nres),
-      .mbist_state(mbist_state),
-      .state_end(state_end),
-      .mbist_addr0(mbist_addr[0]),
-      .alt_mode(mbist_mode[4]),
-      .mbist_din_0(mbist_din_0),
-      .mbist_din_1(mbist_din_1),
-      .mbist_end(mbist_end)
-    );
+      db_generator #(
+        .dataW(dataW),
+        .end_state(8'b10001000),
+        .car_state(8'b10000000)
+      ) DB_GEN (
+        .clk(clk),
+        .nres(nres),
+        .mbist_state(mbist_state),
+        .state_end(state_end),
+        .mbist_addr0(mbist_addr[0]),
+        .alt_mode(mbist_mode[4]),
+        .mbist_din_0(mbist_din_0),
+        .mbist_din_1(mbist_din_1),
+        .mbist_end(mbist_end)
+      );
     `endif
+
+
 
     // Processes
   //------------------------------- Sequential ------------------------------
@@ -437,48 +445,77 @@ endmodule
 `ifdef COUNTERS
 module count_transformer
   #(
-    parameter int cntW = 8
+    parameter int cntW = 8,
+    parameter int tab1 = 15,
+    parameter int tab2 = 7,
+    parameter int tab3 = 4,
+    parameter int tab4 = 1
   ) (
+    input  logic            clk,
+    input  logic            nres,
     input  logic [cntW-1:0] counter,
-    input  logic [cntW-1:0] lfsr,
+    input  logic      [1:0] lfsr_dir,
     input  logic      [3:0] sel,
     output logic [cntW-1:0] addr_bwe
   );
 
-genvar x;
-generate
-  for (x = 0; x < cntW; x = x + 1) begin : gen_addr_bwe
-    always @(*) begin
-      if (sel < 4'hB) begin // CSx = Column Shift x = sel
-        if (x+sel < cntW)
-          addr_bwe[x] = counter[x+sel];
-        else
-          addr_bwe[x] = counter[x+sel-cntW];
-
-      end else if (sel == 4'hB) begin // AC = Address Compliment
-        if (x == cntW-1)
-          addr_bwe[x] = counter[0];
-        else
-          addr_bwe[x] = counter[0] ^ counter[x+1];
-
-      end else if (sel == 4'hC) begin // GC = Gray Code
-        if (x == cntW-1)
-          addr_bwe[x] = counter[x];
-        else
-          addr_bwe[x] = counter[x] ^ counter[x+1];
-
-      end else if (sel == 4'hD) begin // LFSR
-        addr_bwe[x] = lfsr[x];
-
-      end else begin // L = Linear (Default)
-        addr_bwe[x] = counter[x];
+  reg [cntW-1:0] lfsr;
+  logic fb_up;
+  logic fb_down;
+  assign fb_up =   (sel[3:0] == 4'hD) ? lfsr[tab1-1] ^ lfsr[tab2-1] ^ lfsr[tab3-1] ^ lfsr[tab4-1] ^ ~(|lfsr[cntW-2:0]) : 1'b0;
+  assign fb_down = (sel[3:0] == 4'hD) ? lfsr[tab2] ^ lfsr[tab3] ^ lfsr[tab4] ^ lfsr[0] ^ ~(|lfsr[cntW-1:1]) : 1'b0;
+  
+  // Address LFSR matching address counter
+  always @(posedge clk or negedge nres) begin
+    if (nres == 0) begin
+      lfsr <= '0;
+    end else begin
+      if (lfsr_dir == 2'b11) begin
+        lfsr <= '0;
+      end else if (lfsr_dir[0] == 1'b1) begin
+        lfsr <= {lfsr[cntW-2:0], fb_up};
+      end else if (lfsr_dir[1] == 1'b1) begin
+        lfsr <= {fb_down, lfsr[cntW-1:1]};
       end
     end
   end
-endgenerate
+
+  genvar x;
+  generate
+    for (x = 0; x < cntW; x = x + 1) begin : gen_addr_bwe
+      always @(*) begin
+        if (sel < 4'hB) begin // CSx = Column Shift x = sel
+          if (x+sel < cntW)
+            addr_bwe[x] = counter[x+sel];
+          else
+            addr_bwe[x] = counter[x+sel-cntW];
+
+        end else if (sel == 4'hB) begin // AC = Address Compliment
+          if (x == cntW-1)
+            addr_bwe[x] = counter[0];
+          else
+            addr_bwe[x] = counter[0] ^ counter[x+1];
+
+        end else if (sel == 4'hC) begin // GC = Gray Code
+          if (x == cntW-1)
+            addr_bwe[x] = counter[x];
+          else
+            addr_bwe[x] = counter[x] ^ counter[x+1];
+
+        end else if (sel == 4'hD) begin // LFSR
+          addr_bwe[x] = lfsr[x];
+
+        end else begin // L = Linear (Default)
+          addr_bwe[x] = counter[x];
+        end
+      end
+    end
+  endgenerate
 
 endmodule
 `endif
+
+
 
 `ifdef WORDMBIST
 
@@ -508,14 +545,14 @@ module db_generator
 
   always_comb begin
     case (db_state)
-      3'b000:   db_base = 64'h5555555555555555; //01010101
-      3'b001:   db_base = 64'h3333333333333333; //00110011
-      3'b010:   db_base = 64'h9999999999999999; //10011001
-      3'b011:   db_base = 64'h1111111111111111; //00010001
-      3'b100:   db_base = 64'h2222222222222222; //00100010
-      3'b101:   db_base = 64'h4444444444444444; //01000100
-      3'b110:   db_base = 64'h8888888888888888; //10001000
-      default: db_base = '0;
+      3'b000:  db_base = 64'h5555555555555555; //01010101
+      3'b001:  db_base = 64'h3333333333333333; //00110011
+      3'b010:  db_base = 64'h9999999999999999; //10011001
+      3'b011:  db_base = 64'h1111111111111111; //00010001
+      3'b100:  db_base = 64'h2222222222222222; //00100010
+      3'b101:  db_base = 64'h4444444444444444; //01000100
+      3'b110:  db_base = 64'h8888888888888888; //10001000
+      default: db_base = '0;                   //00000000
     endcase
   end
   `else
@@ -524,22 +561,22 @@ module db_generator
 
   always_comb begin
     case (db_state)
-      4'b0000:   db_base = 64'h5555555555555555; //01010101
-      4'b0001:   db_base = 64'h3333333333333333; //00110011
-      4'b0010:   db_base = 64'h9999999999999999; //10011001
-      4'b0011:   db_base = 64'h1111111111111111; //00010001
-      4'b0100:   db_base = 64'h2222222222222222; //00100010
-      4'b0101:   db_base = 64'h4444444444444444; //01000100
-      4'b0110:   db_base = 64'h8888888888888888; //10001000
-      4'b0111:   db_base = 64'h0F0F0F0F0F0F0F0F; //00001111
-      4'b1000:   db_base = 64'h1E1E1E1E1E1E1E1E; //00011110
-      4'b1001:   db_base = 64'h3C3C3C3C3C3C3C3C; //00111100
-      4'b1010:   db_base = 64'h7878787878787878; //01111000
-      4'b1011:   db_base = 64'h2D2D2D2D2D2D2D2D; //00101101
-      4'b1100:   db_base = 64'h5A5A5A5A5A5A5A5A; //01011010
-      4'b1101:   db_base = 64'hB4B4B4B4B4B4B4B4; //10110100
-      4'b1110:   db_base = 64'h6969696969696969; //01101001
-      default: db_base = '0;
+      4'b0000: db_base = 64'h5555555555555555; //01010101
+      4'b0001: db_base = 64'h3333333333333333; //00110011
+      4'b0010: db_base = 64'h9999999999999999; //10011001
+      4'b0011: db_base = 64'h1111111111111111; //00010001
+      4'b0100: db_base = 64'h2222222222222222; //00100010
+      4'b0101: db_base = 64'h4444444444444444; //01000100
+      4'b0110: db_base = 64'h8888888888888888; //10001000
+      4'b0111: db_base = 64'h0F0F0F0F0F0F0F0F; //00001111
+      4'b1000: db_base = 64'h1E1E1E1E1E1E1E1E; //00011110
+      4'b1001: db_base = 64'h3C3C3C3C3C3C3C3C; //00111100
+      4'b1010: db_base = 64'h7878787878787878; //01111000
+      4'b1011: db_base = 64'h2D2D2D2D2D2D2D2D; //00101101
+      4'b1100: db_base = 64'h5A5A5A5A5A5A5A5A; //01011010
+      4'b1101: db_base = 64'hB4B4B4B4B4B4B4B4; //10110100
+      4'b1110: db_base = 64'h6969696969696969; //01101001
+      default: db_base = '0;                   //00000000
     endcase
   end
   `endif
