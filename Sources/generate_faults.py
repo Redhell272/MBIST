@@ -239,7 +239,7 @@ for i, b in enumerate(base):
     elif b < 890: #ANPSFk - 0.5%
         label = "ANPSFk"
         primitive = 0b100
-        pattern_bit = [R.randint(2, 3) for _ in range(couple_count)]
+        pattern_bit = [R.randint(2, 3) for _ in range(disturb_count)]
         pattern_disturb = pattern_addr(R, addr[i], disturb_count, mem_dataW, mem_addrW)
 
     elif b < 940: #ADF - 5%
@@ -289,7 +289,7 @@ for i, b in enumerate(base):
     for ii, addrs in enumerate(pattern_disturb):
         disturb[ii][0] = addrs
         disturb[ii][1] = 1
-        disturb[ii][2] = R.randint(2, 3)
+        disturb[ii][2] = pattern_bit[ii]
 
 
     p_val = 0

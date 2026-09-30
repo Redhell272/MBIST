@@ -1,10 +1,15 @@
 `timescale 1ns/1ns
-//Test Logic Switch
+
+//Test top_model memory model
+//iverilog -g2012 -o "testbench.out" "mbist\sources\fault_injection_wrapper.sv" "mbist\sources\faults_database.sv" "mbist\sources\sram.sv" "mbist\sources\mbist.sv" "mbist\sources\memory_model.sv" "mbist\sources\top_model.sv" "mbist\sources\tb_memory_model.sv"
+//vvp "testbench.out" +mem_dir=MBIST/Sources -fst
+//gtkwave .\testbench.fst
+
 module testbench;
 
-  localparam int mbist_mode = 5'b11100;
+  localparam int mbist_mode = 5'b01101;
 
-  localparam int fault_count = 64;
+  localparam int fault_count = 2048;
   localparam int random_seed = 42;
   localparam int parallel_mems = 2;
   localparam int mem_sections = 8;
