@@ -87,6 +87,61 @@ def fault_type_map(fault_type):
         0b111: "  RRF"}
     return fault_type_dict.get(fault_type, f"ERR({fault_type})")
 
+labels_dict = [
+['',2],
+['   SAF:  SAF',0,0],
+['   SOF:  RRF',0,0],
+['   USF:  RRF',0,0],
+['   NAF:  RRF',0,0],
+['',2],
+['    TF:   TF',0,0],
+['   WDF:  WDF',0,0],
+['   RDF:  RDF',0,0],
+['  DRDF: DRDF',0,0],
+['   IRF:  IRF',0,0],
+['   RRF:  RRF',0,0],
+['',2],
+['  CFst:  SAF',0,0],
+['  CFds:  RDF',0,0],
+['',1],
+['  CFtr:   TF',0,0],
+['  CFwd:  WDF',0,0],
+['  CFrd:  RDF',0,0],
+[' CFdrd: DRDF',0,0],
+['  CFir:  IRF',0,0],
+['  CFrr:  RRF',0,0],
+['',2],
+['   LRF:  RDF',0,0],
+['   DRF:  DRF',0,0],
+['   D1X:  DRF',0,0],
+['   D2X:  DRF',0,0],
+['   D1X:  SAF',0,0],
+['   D2X:  SAF',0,0],
+['',1],
+['   D1X:   TF',0,0],
+['   D2X:   TF',0,0],
+['   D1X:  WDF',0,0],
+['   D2X:  WDF',0,0],
+['   D1X:  RDF',0,0],
+['   D2X:  RDF',0,0],
+['   D1X: DRDF',0,0],
+['   D2X: DRDF',0,0],
+['   D1X:  IRF',0,0],
+['   D2X:  IRF',0,0],
+['   D1X:  RRF',0,0],
+['   D2X:  RRF',0,0],
+['',4],
+['SNPSFk:  SAF',0,0],
+['PNPSFk:   TF',0,0],
+['ANPSFk:  RDF',0,0],
+['',2],
+['   ADF:  RRF',0,0],
+['  ADOF:  RDF',0,0],
+['',2],
+['  SWDF:   TF',0,0],
+['d2cIRF:  IRF',0,0]
+]
+
 
 
 # Log the output to both the console and a results file
@@ -265,10 +320,18 @@ print(f'\nTotal Faults Detected by MBIST: {n_found} / {n_faults} = {n_found/n_fa
 detected_faults = [[],[],[],[],[],[],[],[]]
 undetected_faults = [[],[],[],[],[],[],[],[]]
 for i, fault in enumerate(faults):
-    if len(fault[1]) == 0:
+    n = len(fault[1])
+    if n == 0:
         undetected_faults[primitives[i][0]].append(i)
     else:
         detected_faults[primitives[i][0]].append(i)
+
+    if n > 1: n = 1
+    for ii, key in enumerate(labels_dict):
+        if primitives[i][1][1:13] == key[0]:
+            labels_dict[ii][1] += 1
+            labels_dict[ii][2] += n
+            break
 
 print(linebreak)
 print(f'\nDetected/Undetected Faults by Type:\n')
@@ -322,3 +385,17 @@ print()
 
 sys.stdout = sys.__stdout__
 results_file.close()
+
+with open('testbench.coverage', 'w') as lf:
+    lf.write(f"'{n_found}/{n_faults}\n")
+    i = 0
+    while i < len(labels_dict):
+        if labels_dict[i][0] == '':
+            lf.write(f'{"\n" * labels_dict[i][1]}')
+        else:
+            if "D1X" in labels_dict[i][0] and "D2X" in labels_dict[i+1][0]:
+                lf.write(f"'{labels_dict[i][2]}/{labels_dict[i][1]} | {labels_dict[i+1][2]}/{labels_dict[i+1][1]}\n")
+                i += 1
+            else:
+                lf.write(f"'{labels_dict[i][2]}/{labels_dict[i][1]}\n")
+        i += 1
