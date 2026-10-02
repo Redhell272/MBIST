@@ -108,7 +108,7 @@ primitiveW = (2 * watch_depth) + depthW + 20
 dataAddrW  = mem_addrW + math.ceil(math.log2(mem_dataW))
 disturbW   = primitiveW - 20 + dataAddrW
 
-R = random.Random(random_seed)
+R = random.Random(random_seed+42)
 base = [(R.randint(0, 999)) for _ in range(fault_count)]
 addr = [(R.randint(0, 2**dataAddrW - 1)) for _ in range(fault_count)]
 p_vals = []
@@ -219,12 +219,12 @@ for i, b in enumerate(base):
         label = "   D1X"
         primitive = R.randint(0, 7)
         prim_watch = 1
-        prim_watch_pattern = R.randint(0, 3)
+        prim_watch_pattern = (R.randint(0, 3) & 0x2) | (prim_rand & 0x01)
     elif b < 855: #D2X - 1%
         label = "   D2X"
         primitive = R.randint(0, 7)
         prim_watch = 2
-        prim_watch_pattern = R.randint(0, 15)
+        prim_watch_pattern = (R.randint(0, 15) & 0xE) | (prim_rand & 0x01) 
 
     elif b < 875: #SNPSFk - 2%
         label = "SNPSFk"
@@ -248,7 +248,7 @@ for i, b in enumerate(base):
     elif b < 970: #ADOF - 3%
         label = "  ADOF"
         primitive = 0b100
-        disturb[0][0] = near_addr(R, addr[i], mem_dataW, mem_addrW)
+        disturb[0][0] = near_addr(R, addr[i], mem_dataW, mem_addrW) + 4
         disturb[0][1] = 1
         disturb[0][2] = R.randint(2, 3)
 
@@ -256,7 +256,7 @@ for i, b in enumerate(base):
         label = "  SWDF"
         primitive = 0b010
         prim_watch = 1
-        prim_watch_pattern = R.randint(2, 3)
+        prim_watch_pattern = 0x2 | (prim_rand & 0x01)
     elif b < 1000: #d2cIRF - 1%
         label = "d2cIRF"
         primitive = 0b110

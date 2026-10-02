@@ -171,6 +171,7 @@ module fault_model
     reg cell_reg;
     reg cell_flip;
     reg fault_read_d;
+    reg fault_active_d;
     reg [15:0] rand_cnt;
     reg [15:0] rand_shf;
 
@@ -198,6 +199,7 @@ module fault_model
     logic do_rand_shf;
 
     logic fault_watch_trigger;
+    logic [disturb_count-1:0] disturb_watch_clear;
     logic [disturb_count-1:0] disturb_watch_triggers;
     logic all_watch_trigger;
 
@@ -216,7 +218,7 @@ module fault_model
     assign fault_init = fault_primitive[0];
     assign fault_action = fault_primitive[3:1];
 
-    assign all_watch_trigger = fault_watch_trigger ? &disturb_watch_triggers : 1'b0;
+    assign all_watch_trigger = fault_watch_trigger && &disturb_watch_triggers;
     assign all_track_trigger = &couple_track_triggers;
     assign fault_active = (cell_reg == fault_primitive[4]) && all_watch_trigger && all_track_trigger;
 
@@ -253,6 +255,7 @@ module fault_model
       .access_cnt(fault_access_cnt),
       .pattern(fault_access_pattern),
       //Fault Injection
+      .watch_clear(),
       .watch_trigger(fault_watch_trigger)
     );
 
@@ -280,6 +283,7 @@ module fault_model
           .access_cnt(disturb_primitives[x*disturbW+dataAddrW+depthW-1:x*disturbW+dataAddrW]),
           .pattern(disturb_primitives[(x+1)*disturbW-1:x*disturbW+dataAddrW+depthW]),
           //Fault Injection
+          .watch_clear(disturb_watch_clear[x]),
           .watch_trigger(disturb_watch_triggers[x])
         );
       end
@@ -317,18 +321,23 @@ module fault_model
     always @(posedge clk or negedge nres) begin
       if (nres == 0) begin
         fault_read_d <= 1'b0;
+        fault_active_d <= 1'b0;
         cell_reg <= (fault_action == 3'b000) ? fault_primitive[4] : fault_init;
         cell_flip <= 1'b0;
         rand_cnt <= 16'h0000;
         rand_shf <= fault_nonce;
       end else begin
         fault_read_d <= fault_read;
+        fault_active_d <= fault_active;
 
         // Cell Register Updates
         if (fault_write) begin
           cell_reg <= overwrite_w ? ~fault_din : fault_din;
           cell_flip <= 1'b0;
         end else if (flip_on_read && fault_read_d && fault_active) begin
+          cell_reg <= ~cell_reg;
+          cell_flip <= 1'b1;
+        end else if (|disturb_watch_clear && &disturb_watch_triggers) begin
           cell_reg <= ~cell_reg;
           cell_flip <= 1'b1;
         end else if (do_rand_cnt && rand_cnt == 16'h0001) begin
@@ -370,17 +379,17 @@ module fault_model
 
         3'b010: begin // Transition Fault
           overwrite_w = (fault_din != cell_reg) && fault_active;
-          overwrite_r = 1'b0;
+          overwrite_r = cell_flip;
         end
 
         3'b011: begin // Write Disturb Fault
           overwrite_w = (fault_din == cell_reg) && fault_active;
-          overwrite_r = 1'b0;
+          overwrite_r = cell_flip;
         end
 
         3'b100: begin // Read Destructive Fault
           overwrite_w = 1'b0;
-          overwrite_r = fault_active || cell_flip;
+          overwrite_r = fault_active_d || cell_flip;
         end
 
         3'b101: begin // Deceptive Read Destructive Fault
@@ -390,12 +399,12 @@ module fault_model
 
         3'b110: begin // Incorrect Read Fault
           overwrite_w = 1'b0;
-          overwrite_r = fault_active;
+          overwrite_r = fault_active_d || cell_flip;
         end
 
         3'b111: begin // Random Read Fault
           overwrite_w = 1'b0;
-          overwrite_r = fault_active && rand_shf[0];
+          overwrite_r = fault_active_d && rand_shf[0];
         end
 
       endcase
@@ -427,6 +436,7 @@ module address_watcher
     input  logic        [depthW-1:0] access_cnt,
     input  logic [2*watch_depth-1:0] pattern,
     //Activation Output
+    output logic watch_clear,
     output logic watch_trigger
   );
   
@@ -445,6 +455,7 @@ module address_watcher
     logic [2*watch_depth-1:0] access_pattern;
 
     logic [2*watch_depth-1:0] access_bitmask;
+    logic nres_clear;
     logic access_match;
 
     //Assigns
@@ -464,7 +475,10 @@ module address_watcher
     endgenerate
 
     assign access_bitmask = ~('1 << (access_cnt*2));
-    assign access_match = (nres_access_cnt == 0) ? (cell_access_watch & access_bitmask) == (access_pattern & access_bitmask) : 1'b0;
+    assign nres_clear = (nres_access_cnt == 0);
+    assign access_match = nres_clear ? (cell_access_watch & access_bitmask) == (access_pattern & access_bitmask) : 1'b0;
+
+    assign watch_clear = (access_cnt > 0) ? nres_clear : 1'b0;
     assign watch_trigger = (access_cnt > 0) ? access_match : 1'b1;
 
     //Instances
