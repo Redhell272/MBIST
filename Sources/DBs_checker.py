@@ -216,12 +216,12 @@ R = random.Random(42)
 new_DBs = DBs.copy()
 DBlist = new_DBs[1:]
 
-n = 1000
-for _ in range(n):
+n = 250000
+for i in range(n):
     R.shuffle(DBlist)
     new_DBs[1:] = DBlist
 
-    print(f"\nShuffled DBs: {[hex(DB) for DB in new_DBs]}")
+    print(f"\n[i:{i:06d}] Shuffled DBs: {[hex(DB) for DB in new_DBs]}")
     new_matches_5N = check_DBs_5N(new_DBs)
     new_matches_9N  = check_DBs_9N(new_DBs)
     if new_matches_9N >= matches_9N:
@@ -239,3 +239,8 @@ print(f"Matches for 5N patterns: {matches_5N} of {2**5}")
 print(f"Matches for 9N patterns: {matches_9N} of {2**9}")
 print(f"Matches for 13N patterns: {matches_13N} of {2**13}")
 print()
+
+# Final DBs after 250000 shuffles: ['0x0', '0x33', '0x55', '0x99', '0x78', '0x22', '0xb4', '0x11', '0x88', '0x69', '0x5a', '0x3c', '0x1e', '0x44', '0xf', '0x2d']
+# Matches for 5N patterns: 32 of 32
+# Matches for 9N patterns: 382 of 512
+# Matches for 13N patterns: 1124 of 8192
