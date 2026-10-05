@@ -519,7 +519,7 @@ endmodule
 
 `ifdef WORDMBIST
 
-`define LONGDBS
+`define REORDERED
 
 module db_generator
   #(
@@ -539,23 +539,7 @@ module db_generator
   );
 
   logic [dataW-1:0] db_base;
-  `ifndef LONGDBS
-  reg         [2:0] db_state;
-  assign mbist_end = (db_state == 3'b111);
-
-  always_comb begin
-    case (db_state)
-      3'b000:  db_base = 64'h5555555555555555; //01010101
-      3'b001:  db_base = 64'h3333333333333333; //00110011
-      3'b010:  db_base = 64'h9999999999999999; //10011001
-      3'b011:  db_base = 64'h1111111111111111; //00010001
-      3'b100:  db_base = 64'h2222222222222222; //00100010
-      3'b101:  db_base = 64'h4444444444444444; //01000100
-      3'b110:  db_base = 64'h8888888888888888; //10001000
-      default: db_base = '0;                   //00000000
-    endcase
-  end
-  `else
+  `ifdef REORDERED
   reg         [3:0] db_state;
   assign mbist_end = (db_state == 4'b1111);
 
@@ -576,6 +560,30 @@ module db_generator
       4'b1100: db_base = 64'h4444444444444444; //01000100
       4'b1101: db_base = 64'h0F0F0F0F0F0F0F0F; //00001111
       4'b1110: db_base = 64'h2D2D2D2D2D2D2D2D; //00101101
+      default: db_base = '0;                   //00000000
+    endcase
+  end
+  `else
+  reg         [3:0] db_state;
+  assign mbist_end = (db_state == 4'b1111);
+
+  always_comb begin
+    case (db_state)
+      4'b0000: db_base = 64'h5555555555555555; //01010101
+      4'b0001: db_base = 64'h3333333333333333; //00110011
+      4'b0010: db_base = 64'h9999999999999999; //10011001
+      4'b0011: db_base = 64'h1111111111111111; //00010001
+      4'b0100: db_base = 64'h2222222222222222; //00100010
+      4'b0101: db_base = 64'h4444444444444444; //01000100
+      4'b0110: db_base = 64'h8888888888888888; //10001000
+      4'b0111: db_base = 64'h0F0F0F0F0F0F0F0F; //00001111
+      4'b1000: db_base = 64'h1E1E1E1E1E1E1E1E; //00011110
+      4'b1001: db_base = 64'h3C3C3C3C3C3C3C3C; //00111100
+      4'b1010: db_base = 64'h7878787878787878; //01111000
+      4'b1011: db_base = 64'h2D2D2D2D2D2D2D2D; //00101101
+      4'b1100: db_base = 64'h5A5A5A5A5A5A5A5A; //01011010
+      4'b1101: db_base = 64'hB4B4B4B4B4B4B4B4; //10110100
+      4'b1110: db_base = 64'h6969696969696969; //01101001
       default: db_base = '0;                   //00000000
     endcase
   end
