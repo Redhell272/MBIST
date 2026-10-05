@@ -1,3 +1,5 @@
+`define PARALLELMBIST
+
 module memory_model
   #(
     parameter int base_index = 0,    //Base index for labelling and offsets
@@ -46,107 +48,233 @@ module memory_model
     logic [dataW-1:0] dout_array [mem_sections-1:0];
     logic [dataW-1:0] sect_dout;
 
-    assign dout = sect_dout;
+    `ifndef PARALLELMBIST
 
-    // Memory Sections
-    genvar x,y;
-    generate
-      for (x = 0; x < mem_sections; x = x + 1) begin : mem_sect
-        // Chip Select Decoder
-        assign cs_n_array[x] = (addr[addrW-1:mem_addrW] == x) ? cs_n : 1'b1;
-    
-        logic                 mem_cs_n;
-        logic [mem_addrW-1:0] mem_addr;
-        logic                 mem_we_n;
-        logic     [dataW-1:0] mem_bwe_n;
-        logic     [dataW-1:0] mem_din;
-        logic                 mem_re_n;
-        logic     [dataW-1:0] mem_dout;
+      assign dout = sect_dout;
+      
+      // Memory Sections
+      genvar x,y;
+      generate
+        for (x = 0; x < mem_sections; x = x + 1) begin : mem_sect
+          // Chip Select Decoder
+          assign cs_n_array[x] = (addr[addrW-1:mem_addrW] == x) ? cs_n : 1'b1;
+      
+          logic                 mem_cs_n;
+          logic [mem_addrW-1:0] mem_addr;
+          logic                 mem_we_n;
+          logic     [dataW-1:0] mem_bwe_n;
+          logic     [dataW-1:0] mem_din;
+          logic                 mem_re_n;
+          logic     [dataW-1:0] mem_dout;
 
-        logic                 mbist_cs_n;
-        logic [mem_addrW-1:0] mbist_addr;
-        logic                 mbist_we_n;
-        logic     [dataW-1:0] mbist_bwe_n;
-        logic     [dataW-1:0] mbist_din;
-        logic                 mbist_re_n;
-        logic     [dataW-1:0] mbist_dout;
+          logic                 mbist_cs_n;
+          logic [mem_addrW-1:0] mbist_addr;
+          logic                 mbist_we_n;
+          logic     [dataW-1:0] mbist_bwe_n;
+          logic     [dataW-1:0] mbist_din;
+          logic                 mbist_re_n;
+          logic     [dataW-1:0] mbist_dout;
 
-        logic                 mbist_sel;
+          logic                 mbist_sel;
 
-        assign mem_cs_n   = mbist_sel ? mbist_cs_n   : cs_n_array[x];
-        assign mem_addr   = mbist_sel ? mbist_addr   : addr[mem_addrW-1:0];
-        assign mem_we_n   = mbist_sel ? mbist_we_n   : we_n;
-        assign mem_bwe_n  = mbist_sel ? mbist_bwe_n  : bwe_n;
-        assign mem_din    = mbist_sel ? mbist_din    : din;
-        assign mem_re_n   = mbist_sel ? mbist_re_n   : re_n;
+          assign mem_cs_n   = mbist_sel ? mbist_cs_n   : cs_n_array[x];
+          assign mem_addr   = mbist_sel ? mbist_addr   : addr[mem_addrW-1:0];
+          assign mem_we_n   = mbist_sel ? mbist_we_n   : we_n;
+          assign mem_bwe_n  = mbist_sel ? mbist_bwe_n  : bwe_n;
+          assign mem_din    = mbist_sel ? mbist_din    : din;
+          assign mem_re_n   = mbist_sel ? mbist_re_n   : re_n;
 
-        assign mbist_dout = mbist_sel ? mem_dout : '0;
+          assign mbist_dout = mbist_sel ? mem_dout : '0;
 
-        assign dout_array[x] = mbist_sel ? '0 : mem_dout;
+          assign dout_array[x] = mbist_sel ? '0 : mem_dout;
 
-        mbist #(
-          .base_index(base_index+parallel_mems*x),
-          .parallel_mems(parallel_mems),
-          .mem_addrW(mem_addrW),
-          .mem_dataW(mem_dataW),
-          .addrW(addrW),
-          .dataW(dataW)
-        ) MBIST (
-          .clk(clk),
-          .nres(nres),
-          //MBIST Interface
-          .mbist_mode(mbist_mode),
-          .mbist_en(mbist_en[x]),
-          .mbist_sel(mbist_sel),
-          .mbist_fault(mbist_fault[                (parallel_mems*(x+1))-1:(parallel_mems*x)]),
-          .mbist_fault_state(mbist_fault_state[  (parallel_mems*8*(x+1))-1:(parallel_mems*8*x)]),
-          .mbist_fault_addr(mbist_fault_addr[(parallel_mems*addrW*(x+1))-1:(parallel_mems*addrW*x)]),
-          .mbist_fault_data(mbist_fault_data[              (dataW*(x+1))-1:(dataW*x)]),
-          .mbist_fault_dout(mbist_fault_dout[              (dataW*(x+1))-1:(dataW*x)]),
-          .mbist_done(mbist_done[x]),
-          //Memory Port
-          .cs_n(mbist_cs_n),
-          .addr(mbist_addr),
-          .we_n(mbist_we_n),
-          .bwe_n(mbist_bwe_n),
-          .din(mbist_din),
-          .re_n(mbist_re_n),
-          .dout(mbist_dout)
-        );
-
-        // Parallel Memories with individual MBIST
-        for (y = 0; y < parallel_mems; y = y + 1) begin : mem_inst
-
-          fault_injection_wrapper #(
-            .base_index(base_index+parallel_mems*x+y),
-            .mem_len(mem_len),
+          mbist #(
+            .base_index(base_index+parallel_mems*x),
             .parallel_mems(parallel_mems),
-            .fault_count(mem_fault_count),
-            .disturb_count(disturb_count),
-            .couple_count(couple_count),
-            .watch_depth(watch_depth),
-            .addrW(mem_addrW),
-            .dataW(mem_dataW)
-          ) MEM (
-            `ifndef SYNTHESIS
-            .log_fd(log_fd),
-            `endif
+            .mbistW(1),
+            .mem_addrW(mem_addrW),
+            .mem_dataW(mem_dataW),
+            .addrW(addrW),
+            .dataW(dataW)
+          ) MBIST (
             .clk(clk),
             .nres(nres),
+            //MBIST Interface
+            .mbist_mode(mbist_mode),
+            .mbist_en(mbist_en[x]),
+            .mbist_sel(mbist_sel),
+            .mbist_done(mbist_done[x]),
+            .mbist_fault(mbist_fault[                (parallel_mems*(x+1))-1:(parallel_mems*x)]),
+            .mbist_fault_state(mbist_fault_state[  (parallel_mems*8*(x+1))-1:(parallel_mems*8*x)]),
+            .mbist_fault_addr(mbist_fault_addr[(parallel_mems*addrW*(x+1))-1:(parallel_mems*addrW*x)]),
+            .mbist_fault_data(mbist_fault_data[              (dataW*(x+1))-1:(dataW*x)]),
+            .mbist_fault_dout(mbist_fault_dout[              (dataW*(x+1))-1:(dataW*x)]),
             //Memory Port
-            .cs_n(mem_cs_n),
-            .addr(mem_addr),
-            // Write
-            .we_n(mem_we_n),
-            .bwe_n(mem_bwe_n[(mem_dataW*(y+1))-1:(mem_dataW*y)]),
-            .din(mem_din[(mem_dataW*(y+1))-1:(mem_dataW*y)]),
-            // Read
-            .re_n(mem_re_n),
-            .dout(mem_dout[(mem_dataW*(y+1))-1:(mem_dataW*y)])
+            .cs_n(mbist_cs_n),
+            .addr(mbist_addr),
+            .we_n(mbist_we_n),
+            .bwe_n(mbist_bwe_n),
+            .din(mbist_din),
+            .re_n(mbist_re_n),
+            .dout(mbist_dout)
           );
+
+          // Parallel Memories with individual MBIST
+          for (y = 0; y < parallel_mems; y = y + 1) begin : mem_inst
+
+            fault_injection_wrapper #(
+              .base_index(base_index+parallel_mems*x+y),
+              .mem_len(mem_len),
+              .parallel_mems(parallel_mems),
+              .fault_count(mem_fault_count),
+              .disturb_count(disturb_count),
+              .couple_count(couple_count),
+              .watch_depth(watch_depth),
+              .addrW(mem_addrW),
+              .dataW(mem_dataW)
+            ) MEM (
+              `ifndef SYNTHESIS
+              .log_fd(log_fd),
+              `endif
+              .clk(clk),
+              .nres(nres),
+              //Memory Port
+              .cs_n(mem_cs_n),
+              .addr(mem_addr),
+              // Write
+              .we_n(mem_we_n),
+              .bwe_n(mem_bwe_n[(mem_dataW*(y+1))-1:(mem_dataW*y)]),
+              .din(mem_din[(mem_dataW*(y+1))-1:(mem_dataW*y)]),
+              // Read
+              .re_n(mem_re_n),
+              .dout(mem_dout[(mem_dataW*(y+1))-1:(mem_dataW*y)])
+            );
+          end
         end
-      end
-    endgenerate
+      endgenerate
+    `else
+      
+      logic                 mem_cs_n;
+      logic [mem_addrW-1:0] mem_addr;
+      logic                 mem_we_n;
+      logic     [dataW-1:0] mem_bwe_n;
+      logic     [dataW-1:0] mem_din;
+      logic                 mem_re_n;
+
+      logic                 mbist_cs_n;
+      logic [mem_addrW-1:0] mbist_addr;
+      logic                 mbist_we_n;
+      logic     [dataW-1:0] mbist_bwe_n;
+      logic     [dataW-1:0] mbist_din;
+      logic                 mbist_re_n;
+
+      logic                    mbist_sel;
+      logic              [7:0] mbist_state;
+
+      assign mem_cs_n   = mbist_sel ? mbist_cs_n   : cs_n;
+      assign mem_addr   = mbist_sel ? mbist_addr   : addr[mem_addrW-1:0];
+      assign mem_we_n   = mbist_sel ? mbist_we_n   : we_n;
+      assign mem_bwe_n  = mbist_sel ? mbist_bwe_n  : bwe_n;
+      assign mem_din    = mbist_sel ? mbist_din    : din;
+      assign mem_re_n   = mbist_sel ? mbist_re_n   : re_n;
+
+      assign dout = mbist_sel ? '0 : sect_dout;
+
+      mbist #(
+        .base_index(base_index),
+        .parallel_mems(parallel_mems),
+        .mbistW(mem_sections),
+        .mem_addrW(mem_addrW),
+        .mem_dataW(mem_dataW),
+        .addrW(addrW),
+        .dataW(dataW)
+      ) MBIST (
+        .clk(clk),
+        .nres(nres),
+        //MBIST Interface
+        .mbist_mode(mbist_mode),
+        .mbist_en(mbist_en),
+        .mbist_sel(mbist_sel),
+        .mbist_state_o(mbist_state),
+        .mbist_done(mbist_done),
+        //Memory Port
+        .cs_n(mbist_cs_n),
+        .addr(mbist_addr),
+        .we_n(mbist_we_n),
+        .bwe_n(mbist_bwe_n),
+        .din(mbist_din),
+        .re_n(mbist_re_n)
+      );
+      
+      // Memory Sections
+      genvar x,y;
+      generate
+        for (x = 0; x < mem_sections; x = x + 1) begin : mem_sect
+          // Chip Select Decoder
+          assign cs_n_array[x] = mbist_sel ? ~mbist_en[x] : ((addr[addrW-1:mem_addrW] == x) ? cs_n : 1'b1);
+
+          // Parallel Memories
+          for (y = 0; y < parallel_mems; y = y + 1) begin : mem_inst
+            logic [mem_dataW-1:0] mem_dout;
+            logic [mem_dataW-1:0] mbist_dout;
+
+            assign dout_array[x][(mem_dataW*(y+1))-1:(mem_dataW*y)] = mbist_sel ? '0 : mem_dout;
+            assign mbist_dout = mbist_sel ? mem_dout : '0;
+
+            mbist_outcomp #(
+              .base_index((base_index+x*parallel_mems+y) / parallel_mems),
+              .mem_addrW(mem_addrW),
+              .mem_dataW(mem_dataW),
+              .addrW(addrW),
+              .dataW(dataW)
+            ) OC (
+              .clk(clk),
+              .nres(nres),
+              .mbist_sel(mbist_sel),
+              .mbist_state(mbist_state),
+              .mbist_re_n(mem_re_n),
+              .mbist_addr(mem_addr),
+              .mbist_bwe_n(mem_bwe_n[(mem_dataW*(y+1))-1:(mem_dataW*y)]),
+              .mbist_din(mem_din[(mem_dataW*(y+1))-1:(mem_dataW*y)]),
+              .mbist_dout(mbist_dout),
+              .mbist_fault(mbist_fault[(parallel_mems*x)+y]),
+              .mbist_fault_state(mbist_fault_state[((parallel_mems*8*x)+8*(y+1))-1:((parallel_mems*8*x)+8*y)]),
+              .mbist_fault_addr(mbist_fault_addr[((parallel_mems*addrW*x)+addrW*(y+1))-1:((parallel_mems*addrW*x)+addrW*y)]),
+              .mbist_fault_data(mbist_fault_data[((dataW*x)+mem_dataW*(y+1))-1:((dataW*x)+mem_dataW*y)]),
+              .mbist_fault_dout(mbist_fault_dout[((dataW*x)+mem_dataW*(y+1))-1:((dataW*x)+mem_dataW*y)])
+            );
+
+            fault_injection_wrapper #(
+              .base_index(base_index+parallel_mems*x+y),
+              .mem_len(mem_len),
+              .parallel_mems(parallel_mems),
+              .fault_count(mem_fault_count),
+              .disturb_count(disturb_count),
+              .couple_count(couple_count),
+              .watch_depth(watch_depth),
+              .addrW(mem_addrW),
+              .dataW(mem_dataW)
+            ) MEM (
+              `ifndef SYNTHESIS
+              .log_fd(log_fd),
+              `endif
+              .clk(clk),
+              .nres(nres),
+              //Memory Port
+              .cs_n(mem_cs_n),
+              .addr(mem_addr),
+              // Write
+              .we_n(mem_we_n),
+              .bwe_n(mem_bwe_n[(mem_dataW*(y+1))-1:(mem_dataW*y)]),
+              .din(mem_din[(mem_dataW*(y+1))-1:(mem_dataW*y)]),
+              // Read
+              .re_n(mem_re_n),
+              .dout(mem_dout)
+            );
+          end
+        end
+      endgenerate
+    `endif
 
     // Memory Section Output Mux
     always @(*) begin

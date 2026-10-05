@@ -1,3 +1,4 @@
+`define PARALLELMBIST
 
 `define COUNTERS
 `define WORDMBIST
@@ -6,6 +7,7 @@ module mbist
   #(
     parameter int base_index = 0,
     parameter int parallel_mems = 2,
+    parameter int mbistW = 1,
     parameter int mem_addrW = 10,
     parameter int mem_dataW = 32,
     parameter int addrW = 13,
@@ -14,15 +16,16 @@ module mbist
     input  logic clk,
     input  logic nres,
     //MBIST Interface
-    input  logic                             mbist_en,
     input  logic                       [4:0] mbist_mode,
+    input  logic                [mbistW-1:0] mbist_en,
     output logic                             mbist_sel,
+    output logic                [mbistW-1:0] mbist_done,
+    `ifndef PARALLELMBIST
     output logic         [parallel_mems-1:0] mbist_fault,
     output logic     [(parallel_mems*8)-1:0] mbist_fault_state,
     output logic [(parallel_mems*addrW)-1:0] mbist_fault_addr,
     output logic               [(dataW)-1:0] mbist_fault_data,
     output logic               [(dataW)-1:0] mbist_fault_dout,
-    output logic                             mbist_done,
     //Memory Port
     output logic                 cs_n,
     output logic [mem_addrW-1:0] addr,
@@ -31,6 +34,16 @@ module mbist
     output logic     [dataW-1:0] din,
     output logic                 re_n,
     input  logic     [dataW-1:0] dout
+    `else
+    output logic                       [7:0] mbist_state_o,
+    //Memory Port
+    output logic                 cs_n,
+    output logic [mem_addrW-1:0] addr,
+    output logic                 we_n,
+    output logic     [dataW-1:0] bwe_n,
+    output logic     [dataW-1:0] din,
+    output logic                 re_n
+    `endif
   );
 
     localparam int bweW = $clog2(mem_dataW);
@@ -40,17 +53,11 @@ module mbist
     reg [7:0] mbist_state;
     reg [cntW-1:0] mbist_addr_counter;
 
-    reg                 comp_en_d;
-    reg           [7:0] mbist_state_d;
-    reg [mem_addrW-1:0] mbist_addr_d;
-    reg [mem_dataW-1:0] mbist_bwe_d;
-    reg     [dataW-1:0] mbist_din_d;
-
-
     //Wires
     logic [1:0] transition_state;
     logic [3:0] z_state;
 
+    logic mbist_run;
     logic [cntW-1:0] mbist_addr_bwe;
     logic [mem_addrW-1:0] mbist_addr;
     logic [bweW-1:0] mbist_bwe;
@@ -70,18 +77,20 @@ module mbist
     logic [dataW-1:0] mbist_din_1;
     logic [dataW-1:0] mbist_din;
     logic [dataW-1:0] mbist_dout;
-    
-    logic [(addrW - mem_addrW)-1:0] mbist_sect [parallel_mems-1:0];
 
     
 
     //Assigns
-    assign cs_n = mbist_en ? mbist_cs_n : 1'b1;
-    assign addr = mbist_en ? mbist_addr : '0;
-    assign we_n = mbist_en ? mbist_we_n : 1'b1;
-    assign din = mbist_en ? mbist_din : '0;
-    assign re_n = mbist_en ? mbist_re_n : 1'b1;
-    assign mbist_dout = mbist_en ? dout : '0;
+    assign cs_n = |mbist_en ? mbist_cs_n : 1'b1;
+    assign addr = |mbist_en ? mbist_addr : '0;
+    assign we_n = |mbist_en ? mbist_we_n : 1'b1;
+    assign din = |mbist_en ? mbist_din : '0;
+    assign re_n = |mbist_en ? mbist_re_n : 1'b1;
+    `ifndef PARALLELMBIST
+      assign mbist_dout = |mbist_en ? dout : '0;
+    `else
+      assign mbist_state_o = mbist_state;
+    `endif
 
     assign mbist_bwe = mbist_addr_bwe[bweW-1:0];
     assign mbist_addr = mbist_addr_bwe[cntW-1:bweW];
@@ -99,14 +108,32 @@ module mbist
     genvar x;
     generate
       for (x = 0; x < parallel_mems; x = x + 1) begin : parallel_control
-        assign bwe_n[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_en ? mbist_bwe_n : '1;
-        assign mbist_sect[x] = (base_index + x) / parallel_mems;
-
-        assign mbist_fault[x] = mbist_sel && comp_en_d && ((mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d) != (mbist_din_d[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d));
-        assign mbist_fault_state[(8*(x+1))-1:(8*x)] = mbist_fault[x] ? mbist_state_d : '0;
-        assign mbist_fault_addr[(addrW*(x+1))-1:(addrW*x)] = {mbist_sect[x], mbist_fault[x] ? mbist_addr_d : '0};
-        assign mbist_fault_data[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? (mbist_din_d[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d) : '0;
-        assign mbist_fault_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] = mbist_fault[x] ? (mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)] & ~mbist_bwe_d) : '0;
+        assign bwe_n[(mem_dataW*(x+1))-1:(mem_dataW*x)] = |mbist_en ? mbist_bwe_n : '1;
+        
+        `ifndef PARALLELMBIST
+          mbist_outcomp #(
+            .base_index((base_index + x) / parallel_mems),
+            .mem_addrW(mem_addrW),
+            .mem_dataW(mem_dataW),
+            .addrW(addrW),
+            .dataW(dataW)
+          ) OC (
+            .clk(clk),
+            .nres(nres),
+            .mbist_sel(mbist_sel),
+            .mbist_state(mbist_state),
+            .mbist_re_n(mbist_re_n),
+            .mbist_addr(mbist_addr),
+            .mbist_bwe_n(mbist_bwe_n),
+            .mbist_din(mbist_din[(mem_dataW*(x+1))-1:(mem_dataW*x)]),
+            .mbist_dout(mbist_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)]),
+            .mbist_fault(mbist_fault[x]),
+            .mbist_fault_state(mbist_fault_state[(8*(x+1))-1:(8*x)]),
+            .mbist_fault_addr(mbist_fault_addr[(addrW*(x+1))-1:(addrW*x)]),
+            .mbist_fault_data(mbist_fault_data[(mem_dataW*(x+1))-1:(mem_dataW*x)]),
+            .mbist_fault_dout(mbist_fault_dout[(mem_dataW*(x+1))-1:(mem_dataW*x)])
+          );
+        `endif
       end
     endgenerate
 
@@ -195,24 +222,6 @@ module mbist
 
     // Processes
   //------------------------------- Sequential ------------------------------
-    // MBIST Inputs Delay Registers for Comparison
-    always @(posedge clk or negedge nres)
-    begin
-      if (nres == 0) begin
-        comp_en_d <= 1'b0;
-        mbist_state_d <= '0;
-        mbist_addr_d <= '0;
-        mbist_bwe_d <= '1;
-        mbist_din_d <= '0;
-      end else begin
-        comp_en_d <= mbist_sel && !mbist_re_n;
-        mbist_state_d <= mbist_state;
-        mbist_addr_d <= mbist_addr;
-        mbist_bwe_d <= mbist_bwe_n;
-        mbist_din_d <= mbist_din;
-      end
-    end
-
     // Address Counter with selectable direction
     always @(posedge clk or negedge nres) begin
       if (nres == 0) begin
@@ -238,39 +247,39 @@ module mbist
         // Bits: {dont / do sel, 3x identifier bits, dont / do count, up / down count, r / w operation, 0 / 1 bit}
 
           8'h00: begin // Idle
-            if (mbist_en == 1'b1) mbist_state <= 8'b10001010;
+            if (|mbist_en == 1'b1) mbist_state <= 8'b10001010;
           end
 
           8'b10001010: begin // M0.1 - up w0
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else if (state_end == 1'b1) begin
               mbist_state <= 8'b10000000;
             end
           end
 
           8'b10000000: begin // M1.1 - up r0
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
               mbist_state <= 8'b10000011;
             end
           end
 
           8'b10000011: begin // M1.2 - up w1
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
               mbist_state <= 8'b10010011;
             end
           end
 
           8'b10010011: begin // M1.3 - up w1
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
               mbist_state <= 8'b10001001;
             end
           end
 
           8'b10001001: begin // M1.4 - up r1
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else if (state_end == 1'b1) begin
               mbist_state <= 8'b10000101;
             end else begin
@@ -279,28 +288,28 @@ module mbist
           end
 
           8'b10000101: begin // M2.1 - down r1
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
               mbist_state <= 8'b10000110;
             end
           end
 
           8'b10000110: begin // M2.2 - down w0
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
               mbist_state <= 8'b10010110;
             end
           end
 
           8'b10010110: begin // M2.3 - down w0
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
               mbist_state <= 8'b10001100;
             end
           end
 
           8'b10001100: begin // M2.4 - down r0
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else if (state_end == 1'b1) begin
               mbist_state <= 8'b10000100;
             end else begin
@@ -309,28 +318,28 @@ module mbist
           end
 
           8'b10000100: begin // M3.1 - down r0
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
               mbist_state <= 8'b10100110;
             end
           end
 
           8'b10100110: begin // M3.2 - down w0
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
               mbist_state <= 8'b10000111;
             end
           end
 
           8'b10000111: begin // M3.3 - down w1
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
               mbist_state <= 8'b10001101;
             end
           end
 
           8'b10001101: begin // M3.4 - down r1
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else if (state_end == 1'b1) begin
               mbist_state <= 8'b10000001;
             end else begin
@@ -339,35 +348,35 @@ module mbist
           end
 
           8'b10000001: begin // M4.1 - up r1
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
               mbist_state <= 8'b10100011;
             end
           end
 
           8'b10100011: begin // M4.2 - up w1
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
               mbist_state <= 8'b10000010;
             end
           end
 
           8'b10000010: begin // M4.3 - up w0
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
               mbist_state <= 8'b10010000;
             end
           end
 
           8'b10010000: begin // M4.4 - up r0
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else begin
               mbist_state <= 8'b10001000;
             end
           end
 
           8'b10001000: begin // M4.5 - up r0
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
             else if (state_end == 1'b1) begin
               if (mbist_end == 1'b1)
                 mbist_state <= 8'h01;
@@ -379,7 +388,7 @@ module mbist
           end
 
           8'h01: begin // END
-            if (mbist_en == 1'b0) mbist_state <= 8'h00;
+            if (|mbist_en == 1'b0) mbist_state <= 8'h00;
           end
 
           default: begin
@@ -435,6 +444,67 @@ module mbist
           end
       end else begin
           addr_cnt  = 2'b11;
+      end
+    end
+
+endmodule
+
+
+
+module mbist_outcomp
+  #(
+    parameter int base_index = 0,
+    parameter int mem_addrW = 10,
+    parameter int mem_dataW = 32,
+    parameter int addrW = 13,
+    parameter int dataW = 64
+  ) (
+    input  logic                   clk,
+    input  logic                   nres,
+    input  logic                   mbist_sel,
+    input  logic             [7:0] mbist_state,
+    input  logic                   mbist_re_n,
+    input  logic   [mem_addrW-1:0] mbist_addr,
+    input  logic [(mem_dataW)-1:0] mbist_bwe_n,
+    input  logic [(mem_dataW)-1:0] mbist_din,
+    input  logic [(mem_dataW)-1:0] mbist_dout,
+    output logic                   mbist_fault,
+    output logic             [7:0] mbist_fault_state,
+    output logic       [addrW-1:0] mbist_fault_addr,
+    output logic [(mem_dataW)-1:0] mbist_fault_data,
+    output logic [(mem_dataW)-1:0] mbist_fault_dout
+  );
+
+    reg                 comp_en_d;
+    reg           [7:0] mbist_state_d;
+    reg [mem_addrW-1:0] mbist_addr_d;
+    reg [mem_dataW-1:0] mbist_bwe_d;
+    reg     [dataW-1:0] mbist_din_d;
+
+    logic [(addrW - mem_addrW)-1:0] mbist_sect;
+    assign mbist_sect = base_index;
+
+    assign mbist_fault = comp_en_d && ((mbist_dout & ~mbist_bwe_d) != (mbist_din_d & ~mbist_bwe_d));
+    assign mbist_fault_state = mbist_fault ? mbist_state_d : '0;
+    assign mbist_fault_addr = mbist_fault ? {mbist_sect, mbist_addr_d} : '0;
+    assign mbist_fault_data = mbist_fault ? (mbist_din_d & ~mbist_bwe_d) : '0;
+    assign mbist_fault_dout = mbist_fault ? (mbist_dout & ~mbist_bwe_d) : '0;
+
+    // MBIST Inputs Delay Registers for Comparison
+    always @(posedge clk or negedge nres)
+    begin
+      if (nres == 0) begin
+        comp_en_d <= 1'b0;
+        mbist_state_d <= '0;
+        mbist_addr_d <= '0;
+        mbist_bwe_d <= '1;
+        mbist_din_d <= '0;
+      end else begin
+        comp_en_d <= mbist_sel && !mbist_re_n;
+        mbist_state_d <= mbist_state;
+        mbist_addr_d <= mbist_addr;
+        mbist_bwe_d <= mbist_bwe_n;
+        mbist_din_d <= mbist_din;
       end
     end
 
