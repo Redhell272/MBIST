@@ -40,8 +40,8 @@ module faults_database
     // Random Values for Fault Coding
     logic [dataAddrW-1:0] fault_addr_list[fault_count-1:0];
     logic [primitiveW-1:0] fault_primitive_list[fault_count-1:0];
-    logic [disturb_count*disturbW-1:0] disturb_primitives_list[fault_count-1:0];
-    logic [couple_count*(dataAddrW+2)-1:0] couple_primitives_list[fault_count-1:0];
+    logic [(disturb_count*disturbW)-1:0] disturb_primitives_list[fault_count-1:0];
+    logic [(couple_count*(dataAddrW+2))-1:0] couple_primitives_list[fault_count-1:0];
 
     // Temp arrays sized to reach this instance's memory slice in .mem files
     logic [dataAddrW-1:0]                  tmp_fa[0:mem_len-1];

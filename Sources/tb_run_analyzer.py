@@ -217,7 +217,7 @@ for i in range(n_faults):
     prim_text += f'|'
 
     for j in range(disturb_n):
-        disturb_prim = (disturb >> (j*(addrW+dataW+depthW+2**(depthW+1)))) & bitmask(addrW+dataW+depthW+2**(depthW+1))
+        disturb_prim = (disturb >> (j*disturbW)) & bitmask(disturbW)
         disturb_addr = (disturb_prim & bitmask(addrW)) + addr_offset
         disturb_bit = ((disturb_prim >> addrW) & bitmask(dataW)) + bit_offset
         disturb_count = (disturb_prim >> (addrW+dataW)) & bitmask(depthW)
