@@ -211,7 +211,7 @@ module memory_model
       generate
         for (x = 0; x < mem_sections; x = x + 1) begin : mem_sect
           // Chip Select Decoder
-          assign cs_n_array[x] = mbist_sel ? ~mbist_en[x] : ((addr[addrW-1:mem_addrW] == x) ? cs_n : 1'b1);
+          assign cs_n_array[x] = mbist_sel ? ~mbist_en[x] : ((addr[addrW-1:mem_addrW] == x) ? mem_cs_n : 1'b1);
 
           // Parallel Memories
           for (y = 0; y < parallel_mems; y = y + 1) begin : mem_inst
@@ -230,7 +230,7 @@ module memory_model
             ) OC (
               .clk(clk),
               .nres(nres),
-              .mbist_sel(mbist_sel),
+              .mbist_sel(mbist_sel && mbist_en[x]),
               .mbist_state(mbist_state),
               .mbist_re_n(mem_re_n),
               .mbist_addr(mem_addr),
@@ -261,7 +261,7 @@ module memory_model
               .clk(clk),
               .nres(nres),
               //Memory Port
-              .cs_n(mem_cs_n),
+              .cs_n(cs_n_array[x]),
               .addr(mem_addr),
               // Write
               .we_n(mem_we_n),

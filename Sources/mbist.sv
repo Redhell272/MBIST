@@ -7,7 +7,7 @@ module mbist
   #(
     parameter int base_index = 0,
     parameter int parallel_mems = 2,
-    parameter int mbistW = 1,
+    parameter int mbistW = 2,
     parameter int mem_addrW = 10,
     parameter int mem_dataW = 32,
     parameter int addrW = 13,
@@ -96,7 +96,7 @@ module mbist
     assign mbist_addr = mbist_addr_bwe[cntW-1:bweW];
 
     assign mbist_sel = mbist_state[7] == 1'b1;
-    assign mbist_done = mbist_state == 8'h01;
+    assign mbist_done = (mbist_state == 8'h01) ? mbist_en : '0;
 
     assign mbist_cs_n = mbist_sel ? 1'b0 : 1'b1;
     assign mbist_we_n = mbist_sel ? !mbist_state[1] : 1'b1;
@@ -484,7 +484,7 @@ module mbist_outcomp
     logic [(addrW - mem_addrW)-1:0] mbist_sect;
     assign mbist_sect = base_index;
 
-    assign mbist_fault = comp_en_d && ((mbist_dout & ~mbist_bwe_d) != (mbist_din_d & ~mbist_bwe_d));
+    assign mbist_fault = mbist_sel && comp_en_d && ((mbist_dout & ~mbist_bwe_d) != (mbist_din_d & ~mbist_bwe_d));
     assign mbist_fault_state = mbist_fault ? mbist_state_d : '0;
     assign mbist_fault_addr = mbist_fault ? {mbist_sect, mbist_addr_d} : '0;
     assign mbist_fault_data = mbist_fault ? (mbist_din_d & ~mbist_bwe_d) : '0;
