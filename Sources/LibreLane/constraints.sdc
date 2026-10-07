@@ -6,8 +6,10 @@ create_clock -name clk -period 40.0000 [get_ports {clk}]
 set_max_transition 0.5000 [current_design]
 
 # Specify generic boundary constraints
-set_input_delay 0.2000 -clock clk [all_inputs]
-set_output_delay 0.2000 -clock clk [all_outputs]
+set_input_delay -min 8 -clock clk [all_inputs -no_clocks]
+set_input_delay -max 10 -clock clk [all_inputs -no_clocks]
+set_output_delay -min 4 -clock clk [all_outputs]
+set_output_delay -max 6 -clock clk [all_outputs]
 set_load 0.0334 [all_outputs]
 
 # Ignore timing for reset path
