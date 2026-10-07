@@ -42,6 +42,7 @@
   "STA_CORNERS": ["nom_tt_025C_1v80"],
 
   "GRT_ANTENNA_REPAIR_ITERS": 1,
+  "GRT_ANTENNA_REPAIR_DIODE_ONLY": true,
 
   "RUN_KLAYOUT_XOR": false,
   "KLAYOUT_XOR_IGNORE_LAYERS": ["isram", "poly", "diff"],
