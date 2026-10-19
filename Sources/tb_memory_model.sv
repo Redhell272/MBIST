@@ -3,16 +3,6 @@
 // Test top_model memory model
 //iverilog -g2012 -o "testbench.out" "mbist\sources\fault_injection_wrapper.sv" "mbist\sources\faults_database.sv" "mbist\sources\sram.sv" "mbist\sources\mbist.sv" "mbist\sources\memory_model.sv" "mbist\sources\top_model.sv" "mbist\sources\tb_memory_model.sv"
 //vvp "testbench.out" +mem_dir=MBIST/Sources -fst
-
-//$sw = [System.Diagnostics.Stopwatch]::StartNew()
-//try {
-//    vvp "testbench.out" +mem_dir=MBIST/Sources -fst
-//}
-//finally {
-//    $sw.Stop()
-//    Write-Host "Runtime: $($sw.Elapsed)"
-//}
-
 //gtkwave .\testbench.fst
 
 module testbench;
