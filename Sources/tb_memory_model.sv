@@ -7,13 +7,11 @@
 
 module testbench;
 
-  localparam int mbist_mode = 5'b01101;
-
   localparam int fault_count = 2048;
-  localparam int random_seed = 42;
+  localparam int random_seed = 420;
   localparam int parallel_mems = 2;
   localparam int mem_sections = 8;
-  localparam int disturb_count = 2;
+  localparam int disturb_count = 4;
   localparam int couple_count = 4;
   localparam int watch_depth = 3;
   localparam int addrW = 13;
@@ -25,6 +23,8 @@ module testbench;
   integer          log_fd;
   reg              clk=1'b0;
   reg              nres=1'b0;
+
+  reg [4:0] mbist_mode=5'b01101;
 
   reg              mem1_cs_n=1'b1;
   reg [addrW-1:0]  mem1_addr='0;
@@ -42,7 +42,6 @@ module testbench;
   reg              mem2_re_n=1'b1;
   wire [dataW-1:0] mem2_dout;
 
-  reg                                     [4:0] mem1_mbist_mode=mbist_mode;
   reg                        [mem_sections-1:0] mem1_mbist_en='0;
   wire       [(mem_sections*parallel_mems)-1:0] mem1_mbist_fault;
   wire     [(mem_sections*parallel_mems*8)-1:0] mem1_mbist_fault_state;
@@ -51,7 +50,6 @@ module testbench;
   wire               [(mem_sections*dataW)-1:0] mem1_mbist_fault_dout;
   wire                       [mem_sections-1:0] mem1_mbist_done;
 
-  reg                                     [4:0] mem2_mbist_mode=mbist_mode;
   reg                        [mem_sections-1:0] mem2_mbist_en='0;
   wire       [(mem_sections*parallel_mems)-1:0] mem2_mbist_fault;
   wire     [(mem_sections*parallel_mems*8)-1:0] mem2_mbist_fault_state;
@@ -91,7 +89,7 @@ module testbench;
     .mem2_re_n(mem2_re_n),
     .mem2_dout(mem2_dout),
     //MEM1 MBIST Interface
-    .mem1_mbist_mode(mem1_mbist_mode),
+    .mem1_mbist_mode(mbist_mode),
     .mem1_mbist_en(mem1_mbist_en), 
     .mem1_mbist_fault(mem1_mbist_fault),
     .mem1_mbist_fault_state(mem1_mbist_fault_state),
@@ -100,7 +98,7 @@ module testbench;
     .mem1_mbist_fault_dout(mem1_mbist_fault_dout),
     .mem1_mbist_done(mem1_mbist_done),
     //MEM2 MBIST Interface
-    .mem2_mbist_mode(mem2_mbist_mode),
+    .mem2_mbist_mode(mbist_mode),
     .mem2_mbist_en(mem2_mbist_en), 
     .mem2_mbist_fault(mem2_mbist_fault),
     .mem2_mbist_fault_state(mem2_mbist_fault_state),
@@ -147,10 +145,16 @@ module testbench;
     #10 mem2_addr=0; mem2_re_n=1;
     #20 mem2_cs_n=1;
 
-    #20 mem1_mbist_en='1; mem2_mbist_en='1;
-    wait(mem1_mbist_done == '1); // wait for MEM1 MBIST
+    #20 mem1_mbist_en=8'h55; mem2_mbist_en=8'h55;
+    wait(mem1_mbist_done == 8'h55); // wait for MEM1 MBIST
     #20 mem1_mbist_en='0;
-    wait(mem2_mbist_done == '1); // wait for MEM2 MBIST
+    wait(mem2_mbist_done == 8'h55); // wait for MEM2 MBIST
+    #20 mem2_mbist_en='0;
+
+    #20 mem1_mbist_en=8'hAA; mem2_mbist_en=8'hAA;
+    wait(mem1_mbist_done == 8'hAA); // wait for MEM1 MBIST
+    #20 mem1_mbist_en='0;
+    wait(mem2_mbist_done == 8'hAA); // wait for MEM2 MBIST
     #20 mem2_mbist_en='0;
 
     #10000;

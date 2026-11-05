@@ -47,13 +47,43 @@ def near_addr(R, addr, mem_dataW, mem_addrW):
     return ((bit + ew) << mem_addrW) | ((addr + ns) & bitmask(mem_addrW))
 
 def pattern_addr(R, addr, couple_count, mem_dataW, mem_addrW):
+    bit = addr >> mem_addrW
+    addr = addr & bitmask(mem_addrW)
+
     pattern = []
-    for i in range(couple_count):
-        while True:
-            new_addr = near_addr(R, addr, mem_dataW, mem_addrW)
-            if new_addr not in pattern:
-                pattern.append(new_addr)
-                break
+
+    if couple_count > 0:
+        if bit > 0:
+            pattern.append(((bit - 1) << mem_addrW) | ((addr + 0) & bitmask(mem_addrW)))
+        else:
+            pattern.append(((bit - 1) << mem_addrW) | ((addr - 1) & bitmask(mem_addrW)))
+
+    if couple_count > 1:
+        if bit < (2**mem_dataW - 1):
+            pattern.append(((bit + 1) << mem_addrW) | ((addr + 0) & bitmask(mem_addrW)))
+        else:
+            pattern.append(((bit + 1) << mem_addrW) | ((addr + 1) & bitmask(mem_addrW)))
+
+    if couple_count > 2:
+        if addr > 0:
+            pattern.append(((bit + 0) << mem_addrW) | ((addr - 1) & bitmask(mem_addrW)))
+        else:
+            pattern.append(((bit - 1) << mem_addrW) | ((addr + 1) & bitmask(mem_addrW)))
+
+    if couple_count > 3:
+        if addr < (2**mem_addrW - 1):
+            pattern.append(((bit + 0) << mem_addrW) | ((addr + 1) & bitmask(mem_addrW)))
+        else:
+            pattern.append(((bit + 1) << mem_addrW) | ((addr - 1) & bitmask(mem_addrW)))
+
+    if couple_count > 4:
+        for _ in range(couple_count):
+            while True:
+                new_addr = near_addr(R, addr, mem_dataW, mem_addrW)
+                if new_addr not in pattern:
+                    pattern.append(new_addr)
+                    break
+    
     return pattern
 
 def column_addr(addr, couple_count, mem_addrW):
@@ -108,7 +138,7 @@ primitiveW = (2 * watch_depth) + depthW + 20
 dataAddrW  = mem_addrW + math.ceil(math.log2(mem_dataW))
 disturbW   = primitiveW - 20 + dataAddrW
 
-R = random.Random(random_seed+42)
+R = random.Random(random_seed)
 base = [(R.randint(0, 999)) for _ in range(fault_count)]
 addr = [(R.randint(0, 2**dataAddrW - 1)) for _ in range(fault_count)]
 p_vals = []
@@ -263,6 +293,7 @@ for i, b in enumerate(base):
         disturb[0][0] = near_addr(R, addr[i], mem_dataW, mem_addrW)
         disturb[0][1] = 1
         disturb[0][2] = R.randint(0, 1)
+
 
 
     near_coupling = 2 if near_coupling == 8 else 1 if near_coupling > 0 else 0
