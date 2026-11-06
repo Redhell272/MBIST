@@ -440,7 +440,7 @@ module mbist
             addr_cnt  = 2'b00;
           end else begin
             addr_cnt = { mbist_state[3] && mbist_state[2], 
-                          mbist_state[3] && !mbist_state[2]};
+                         mbist_state[3] && !mbist_state[2]};
           end
       end else begin
           addr_cnt  = 2'b11;

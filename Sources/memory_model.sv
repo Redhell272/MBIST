@@ -195,8 +195,8 @@ module memory_model
         .mbist_mode(mbist_mode),
         .mbist_en(mbist_en),
         .mbist_sel(mbist_sel),
-        .mbist_state_o(mbist_state),
         .mbist_done(mbist_done),
+        .mbist_state_o(mbist_state),
         //Memory Port
         .cs_n(mbist_cs_n),
         .addr(mbist_addr),
