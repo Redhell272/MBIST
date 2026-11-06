@@ -9,8 +9,8 @@ module testbench;
 
   localparam int fault_count = 2048;
   localparam int random_seed = 420;
-  localparam int parallel_mems = 2;
   localparam int mem_sections = 8;
+  localparam int parallel_mems = 2;
   localparam int disturb_count = 4;
   localparam int couple_count = 4;
   localparam int watch_depth = 3;
@@ -60,8 +60,8 @@ module testbench;
   
   // Instantiate Units Under Test
   top_model #(
-      .parallel_mems(parallel_mems),
       .mem_sections(mem_sections),
+      .parallel_mems(parallel_mems),
       .fault_count(fault_count),
       .disturb_count(disturb_count),
       .couple_count(couple_count),

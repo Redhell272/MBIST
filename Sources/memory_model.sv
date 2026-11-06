@@ -3,9 +3,9 @@
 module memory_model
   #(
     parameter int base_index = 0,    //Base index for labelling and offsets
-    parameter int mem_len = 64,      //Length of .mem files
-    parameter int parallel_mems = 2, //Number of parallel memories per section
     parameter int mem_sections = 8,  //Number of memory sections
+    parameter int parallel_mems = 2, //Number of parallel memories per section
+    parameter int mem_file_len = 64, //Length of .mem files
     parameter int fault_count = 64,  //GOTO: /faults_database
     parameter int disturb_count = 4, //GOTO: /faults_database/fault_model
     parameter int couple_count = 16, //GOTO: /faults_database/fault_model
@@ -124,8 +124,8 @@ module memory_model
 
             fault_injection_wrapper #(
               .base_index(base_index+parallel_mems*x+y),
-              .mem_len(mem_len),
               .parallel_mems(parallel_mems),
+              .mem_file_len(mem_file_len),
               .fault_count(mem_fault_count),
               .disturb_count(disturb_count),
               .couple_count(couple_count),
@@ -246,8 +246,8 @@ module memory_model
 
             fault_injection_wrapper #(
               .base_index(base_index+parallel_mems*x+y),
-              .mem_len(mem_len),
               .parallel_mems(parallel_mems),
+              .mem_file_len(mem_file_len),
               .fault_count(mem_fault_count),
               .disturb_count(disturb_count),
               .couple_count(couple_count),

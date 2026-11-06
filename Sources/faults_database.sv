@@ -1,8 +1,8 @@
 module faults_database
   #(
     parameter int base_index = 0,    //Base index for labelling and offsets
-    parameter int mem_len = 64,      //Total number of faults in memory files
     parameter int parallel_mems = 2, //GOTO: /memory_model
+    parameter int mem_file_len = 64, //Total number of faults in memory files
     parameter int fault_count = 16,  //Number of faults in database
     parameter int disturb_count = 4, //GOTO: fault_model
     parameter int couple_count = 16, //GOTO: fault_model
@@ -44,10 +44,10 @@ module faults_database
     logic [(couple_count*(dataAddrW+2))-1:0] couple_primitives_list[fault_count-1:0];
 
     // Temp arrays sized to reach this instance's memory slice in .mem files
-    logic [dataAddrW-1:0]                  tmp_fa[0:mem_len-1];
-    logic [primitiveW-1:0]                 tmp_fp[0:mem_len-1];
-    logic [disturb_count*disturbW-1:0]     tmp_dp[0:mem_len-1];
-    logic [couple_count*(dataAddrW+2)-1:0] tmp_cp[0:mem_len-1];
+    logic [dataAddrW-1:0]                  tmp_fa[0:mem_file_len-1];
+    logic [primitiveW-1:0]                 tmp_fp[0:mem_file_len-1];
+    logic [disturb_count*disturbW-1:0]     tmp_dp[0:mem_file_len-1];
+    logic [couple_count*(dataAddrW+2)-1:0] tmp_cp[0:mem_file_len-1];
 
     string mem_dir;
     initial begin

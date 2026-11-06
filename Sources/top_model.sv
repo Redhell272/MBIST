@@ -1,7 +1,7 @@
 module top_model
   #(
-    parameter int parallel_mems = 2,    //GOTO: /memory_model
     parameter int mem_sections = 8,     //GOTO: /memory_model
+    parameter int parallel_mems = 2,    //GOTO: /memory_model
     parameter int fault_count = 64,     //GOTO: /faults_database
     parameter int disturb_count = 4,    //GOTO: /faults_database/fault_model
     parameter int couple_count = 16,    //GOTO: /faults_database/fault_model
@@ -56,9 +56,9 @@ module top_model
     //MEM1 Instance
     memory_model #(
       .base_index(parallel_mems*mem_sections*0),
-      .mem_len(fault_count),
-      .parallel_mems(parallel_mems),
       .mem_sections(mem_sections),
+      .parallel_mems(parallel_mems),
+      .mem_file_len(fault_count),
       .fault_count(fault_count/2),
       .disturb_count(disturb_count),
       .couple_count(couple_count),
@@ -95,9 +95,9 @@ module top_model
     //MEM2 Instance
     memory_model #(
       .base_index(parallel_mems*mem_sections*1),
-      .mem_len(fault_count),
-      .parallel_mems(parallel_mems),
       .mem_sections(mem_sections),
+      .parallel_mems(parallel_mems),
+      .mem_file_len(fault_count),
       .fault_count(fault_count/2),
       .disturb_count(disturb_count),
       .couple_count(couple_count),
@@ -258,9 +258,9 @@ module top_model
     //MEM1 Instance
     memory_model #(
       .base_index(parallel_mems*mem_sections*0),
-      .mem_len(fault_count),
-      .parallel_mems(parallel_mems),
       .mem_sections(mem_sections),
+      .parallel_mems(parallel_mems),
+      .mem_file_len(fault_count),
       .fault_count(fault_count/2),
       .disturb_count(disturb_count),
       .couple_count(couple_count),
@@ -360,9 +360,9 @@ module top_model
     //MEM2 Instance
     memory_model #(
       .base_index(parallel_mems*mem_sections*1),
-      .mem_len(fault_count),
-      .parallel_mems(parallel_mems),
       .mem_sections(mem_sections),
+      .parallel_mems(parallel_mems),
+      .mem_file_len(fault_count),
       .fault_count(fault_count/2),
       .disturb_count(disturb_count),
       .couple_count(couple_count),
