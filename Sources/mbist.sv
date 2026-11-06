@@ -1,7 +1,7 @@
-`define PARALLELMBIST
+//`define PARALLELMBIST
 
-`define COUNTERS
-`define WORDMBIST
+//`define COUNTERS
+//`define WORDMBIST
 
 module mbist
   #(
@@ -57,17 +57,17 @@ module mbist
     logic [1:0] transition_state;
     logic [3:0] z_state;
 
-    logic mbist_run;
-    logic [cntW-1:0] mbist_addr_bwe;
+    logic                 mbist_run;
+    logic      [cntW-1:0] mbist_addr_bwe;
     logic [mem_addrW-1:0] mbist_addr;
-    logic [bweW-1:0] mbist_bwe;
+    logic      [bweW-1:0] mbist_bwe;
     logic [mem_dataW-1:0] mbist_bwe_n;
-    logic [1:0] addr_cnt;
-    logic [cntW-1:0] addr_cnt_inc;
-    logic       up_end;
-    logic       down_end;
-    logic       state_end;
-    logic       mbist_end;
+    logic           [1:0] addr_cnt;
+    logic      [cntW-1:0] addr_cnt_inc;
+    logic                 up_end;
+    logic                 down_end;
+    logic                 state_end;
+    logic                 mbist_end;
 
     logic             mbist_cs_n;
     logic             mbist_we_n;
@@ -429,7 +429,7 @@ module mbist
         8'b10000010: z_state = 4'h5;
         8'b10010000: z_state = 4'h5;
         8'b10001000: z_state = 4'h5;
-        8'h01:       z_state = 4'h6;
+        8'h01:       z_state = 4'hE;
         default:     z_state = 4'hF;
       endcase
     end
