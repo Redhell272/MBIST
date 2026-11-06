@@ -138,6 +138,7 @@ primitiveW = (2 * watch_depth) + depthW + 20
 dataAddrW  = mem_addrW + math.ceil(math.log2(mem_dataW))
 disturbW   = primitiveW - 20 + dataAddrW
 
+# Set up values necessary for fault gen
 R = random.Random(random_seed)
 base = [(R.randint(0, 999)) for _ in range(fault_count)]
 addr = [(R.randint(0, 2**dataAddrW - 1)) for _ in range(fault_count)]
@@ -146,11 +147,13 @@ d_vals = []
 c_vals = []
 labels = []
 
+# Generate encoding of each fault
 print(f'Generating {fault_count} random faults...\n')
 for i, b in enumerate(base):
     sys.stdout.write("\033[F") # Clear status line for next print
     print(f"\tGenerating fault {i+1}/{fault_count} (base={b})")
 
+    # Initialize blank fault
     label = ""
     init_bit = R.randint(0, 1)
     primitive = 0
@@ -169,6 +172,7 @@ for i, b in enumerate(base):
     pattern_coupling = []
     pattern_disturb = []
 
+    # Determine fault based on base value 'b'
     if b < 250: #SAF - 25%
         label = "   SAF"
         primitive = 0b000
@@ -296,6 +300,7 @@ for i, b in enumerate(base):
 
 
 
+    # Finalize near coupling and disturbing from random values
     near_coupling = 2 if near_coupling == 8 else 1 if near_coupling > 0 else 0
     for ii in range(couple_count):
         if near_coupling > ii and couple_count > 0:
@@ -323,6 +328,7 @@ for i, b in enumerate(base):
         disturb[ii][2] = pattern_bit[ii]
 
 
+    # Encode values from fault elements
     p_val = 0
     p_val |= (init_bit & 0x1) << 0
     p_val |= (primitive & 0x7) << 1
@@ -349,6 +355,7 @@ for i, b in enumerate(base):
 
 
 
+# Write out encoding .mem files
 print(f'Faults generated. Writing to files...\n')
 
 with open(os.path.join(os.path.dirname(__file__), "fault_addr.mem"), "w") as f:
