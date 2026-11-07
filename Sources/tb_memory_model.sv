@@ -24,7 +24,7 @@ module testbench;
   reg              clk=1'b0;
   reg              nres=1'b0;
 
-  reg [4:0] mbist_mode=5'b01101;
+  reg [4:0] mbist_mode=5'b00000;
 
   reg              mem1_cs_n=1'b1;
   reg [addrW-1:0]  mem1_addr='0;

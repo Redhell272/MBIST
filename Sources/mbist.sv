@@ -1,7 +1,7 @@
 //`define PARALLELMBIST
 
-//`define COUNTERS
-//`define WORDMBIST
+`define COUNTERS
+`define WORDMBIST
 
 module mbist
   #(
@@ -589,7 +589,7 @@ endmodule
 
 `ifdef WORDMBIST
 
-`define REORDERED
+//`define REORDERED
 
 module db_generator
   #(

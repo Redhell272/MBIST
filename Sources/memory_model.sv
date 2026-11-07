@@ -1,4 +1,4 @@
-`define PARALLELMBIST
+//`define PARALLELMBIST
 
 module memory_model
   #(
