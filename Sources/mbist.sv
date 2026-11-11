@@ -146,10 +146,9 @@ module mbist
       `ifndef WORDMBIST
         count_transformer #(
           .cntW(cntW),
-          .tab1(15),
-          .tab2(7),
-          .tab3(4),
-          .tab4(1)
+          .tap2(7),
+          .tap3(4),
+          .tap4(1)
         ) CNT_TF (
           .clk(clk),
           .nres(nres),
@@ -161,10 +160,9 @@ module mbist
       `else
         count_transformer #(
           .cntW(mem_addrW),
-          .tab1(10),
-          .tab2(9),
-          .tab3(4),
-          .tab4(1)
+          .tap2(9),
+          .tap3(4),
+          .tap4(1)
         ) CNT_TF (
           .clk(clk),
           .nres(nres),
@@ -516,10 +514,9 @@ endmodule
 module count_transformer
   #(
     parameter int cntW = 8,
-    parameter int tab1 = 15,
-    parameter int tab2 = 7,
-    parameter int tab3 = 4,
-    parameter int tab4 = 1
+    parameter int tap2 = 7,
+    parameter int tap3 = 4,
+    parameter int tap4 = 1
   ) (
     input  logic            clk,
     input  logic            nres,
@@ -532,8 +529,8 @@ module count_transformer
   reg [cntW-1:0] lfsr;
   logic fb_up;
   logic fb_down;
-  assign fb_up =   (sel[3:0] == 4'hD) ? lfsr[tab1-1] ^ lfsr[tab2-1] ^ lfsr[tab3-1] ^ lfsr[tab4-1] ^ ~(|lfsr[cntW-2:0]) : 1'b0;
-  assign fb_down = (sel[3:0] == 4'hD) ? lfsr[tab2] ^ lfsr[tab3] ^ lfsr[tab4] ^ lfsr[0] ^ ~(|lfsr[cntW-1:1]) : 1'b0;
+  assign fb_up =   (sel[3:0] == 4'hD) ? lfsr[cntW-1] ^ lfsr[tap2-1] ^ lfsr[tap3-1] ^ lfsr[tap4-1] ^ ~(|lfsr[cntW-2:0]) : 1'b0;
+  assign fb_down = (sel[3:0] == 4'hD) ? lfsr[tap2] ^ lfsr[tap3] ^ lfsr[tap4] ^ lfsr[0] ^ ~(|lfsr[cntW-1:1]) : 1'b0;
   
   // Address LFSR matching address counter
   always @(posedge clk or negedge nres) begin
@@ -554,13 +551,13 @@ module count_transformer
   generate
     for (x = 0; x < cntW; x = x + 1) begin : gen_addr_bwe
       always @(*) begin
-        if (sel < 4'hB) begin // CSx = Column Shift x = sel
+        if (sel < 4'hB) begin // CSx = Column Right Shift x = sel
           if (x+sel < cntW)
             addr_bwe[x] = counter[x+sel];
           else
             addr_bwe[x] = counter[x+sel-cntW];
 
-        end else if (sel == 4'hB) begin // AC = Address Compliment
+        end else if (sel == 4'hB) begin // AC = Address Complement
           if (x == cntW-1)
             addr_bwe[x] = counter[0];
           else

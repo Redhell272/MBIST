@@ -1,7 +1,7 @@
 
 # LFSR Checker for Up and Down Counting Directions
 # Designed for Fibonacci Style LFSR counter with reverse shifting for down counting (shift left = up, shift right = down)
-# Provide length [l], polynomial (tab positions) [p], and initial value [val]
+# Provide length [l], polynomial (tap positions) [p], and initial value [val]
 # Example:
 # l = 15
 # up_p = [15,7,4,1]
@@ -17,7 +17,7 @@ val = 0x00
 
 # Calculate LFSR cycle states for up counting direction
 L = 2**l
-print(f'UP LFSR Tabs: {up_p}')
+print(f'UP LFSR Taps: {up_p}')
 up_vals = [val]
 for i in range(L-1):
     new_bit = 1 if (val & (2**(l-1)-1)) == 0 else 0
@@ -43,7 +43,7 @@ print(f'UP LFSR Covers All States = {all1}\n')
 
 
 # Calculate LFSR cycle states for down counting direction
-print(f'DOWN LFSR Tabs: {down_p}')
+print(f'DOWN LFSR Taps: {down_p}')
 down_vals = [val]
 for i in range(L-1):
     new_bit = 1 if (val >> 1) == 0 else 0

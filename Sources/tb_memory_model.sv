@@ -24,7 +24,7 @@ module testbench;
   reg              clk=1'b0;
   reg              nres=1'b0;
 
-  reg [4:0] mbist_mode=5'b00000;
+  reg [4:0] mbist_mode=5'b11000;
 
   reg              mem1_cs_n=1'b1;
   reg [addrW-1:0]  mem1_addr='0;
@@ -145,12 +145,14 @@ module testbench;
     #10 mem2_addr=0; mem2_re_n=1;
     #20 mem2_cs_n=1;
 
+    //Test first half of MBISTs
     #20 mem1_mbist_en=8'h55; mem2_mbist_en=8'h55;
     wait(mem1_mbist_done == 8'h55); // wait for MEM1 MBIST
     #20 mem1_mbist_en='0;
     wait(mem2_mbist_done == 8'h55); // wait for MEM2 MBIST
     #20 mem2_mbist_en='0;
 
+    //Test second half of MBISTs
     #20 mem1_mbist_en=8'hAA; mem2_mbist_en=8'hAA;
     wait(mem1_mbist_done == 8'hAA); // wait for MEM1 MBIST
     #20 mem1_mbist_en='0;

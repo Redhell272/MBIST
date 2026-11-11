@@ -148,18 +148,19 @@ labels_dict = [
 results_file = open(results_filepath, 'w')
 sys.stdout = Tee(sys.__stdout__, results_file)
 
+# Read the log file and extract the relevant information
+text_array = []
+with open(filepath, 'r') as file:
+    for line in file:
+        text_array.append(line.split())
+
+# Read the fault labels from the testbench.faults file
 labels = []
 with open("testbench.faults", 'r') as f:
     for line in f:
         index = int(line[1:5])
         label = line[7:13]
         labels.append([index, label])
-
-# Read the log file and extract the relevant information
-text_array = []
-with open(filepath, 'r') as file:
-    for line in file:
-        text_array.append(line.split())
 
 
 # Extract the number of faults and their details
