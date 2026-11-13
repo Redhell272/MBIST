@@ -1,0 +1,175 @@
+OpenROAD dcf36133a369abc8f3c5e5738cd4d82e4903c0e0
+Features included (+) or not (-): +GPU +GUI +Python
+This program is licensed under the BSD-3 license. See the LICENSE file for details.
+Components of this program may be licensed under more restrictive licenses which must be honored.
+
+================================================================
+
+Checking Area from Global Placement
+
+================================================================
+
+             MBISTs Cell Count: 1608
+          MBISTs Physical Area: 15245.8720 um^2
+
+     non-MBIST MEMx Cell Count: 12316
+  non-MBIST MEMx Physical Area: 155892.0128 um^2
+
+================================================================
+
+               MEM1 Cell Count: 6959
+            MEM1 Physical Area: 85543.2928 um^2
+
+               MEM2 Cell Count: 6965
+            MEM2 Physical Area: 85594.5920 um^2
+
+            non-MEM Cell Count: 141940
+         non-MEM Physical Area: 235706.0608 um^2
+
+              BLOCK Cell Count: 32
+           BLOCK Physical Area: 14852726.5152 um^2
+
+================================================================
+
+              Total Cell Count: 155896
+           Total Physical Area: 15259570.4608 um^2
+
+================================================================
+
+OpenROAD dcf36133a369abc8f3c5e5738cd4d82e4903c0e0
+Features included (+) or not (-): +GPU +GUI +Python
+This program is licensed under the BSD-3 license. See the LICENSE file for details.
+Components of this program may be licensed under more restrictive licenses which must be honored.
+
+================================================================
+
+Checking Final Area
+
+================================================================
+
+             MBISTs Cell Count: 1608
+          MBISTs Physical Area: 15825.1776 um^2
+
+     non-MBIST MEMx Cell Count: 12316
+  non-MBIST MEMx Physical Area: 162967.5488 um^2
+
+================================================================
+
+               MEM1 Cell Count: 6959
+            MEM1 Physical Area: 89341.9360 um^2
+
+               MEM2 Cell Count: 6965
+            MEM2 Physical Area: 89450.7904 um^2
+
+            non-MEM Cell Count: 2336703
+         non-MEM Physical Area: 8259606.6180 um^2
+
+              BLOCK Cell Count: 32
+           BLOCK Physical Area: 14852726.5152 um^2
+
+================================================================
+
+              Total Cell Count: 2350659
+           Total Physical Area: 23291125.8614 um^2
+
+================================================================
+
+OpenROAD dcf36133a369abc8f3c5e5738cd4d82e4903c0e0
+Features included (+) or not (-): +GPU +GUI +Python
+This program is licensed under the BSD-3 license. See the LICENSE file for details.
+Components of this program may be licensed under more restrictive licenses which must be honored.
+
+================================================================
+
+Checking Final Routing
+
+================================================================
+
+Design routing status:
+  COMPLETE
+
+Routed wire length by module:
+  MBIST        126896.40um
+  MBIST+MEM1   21586.41um
+  MBIST+MEM2   26358.32um
+  MEM1         2406590.26um
+  MEM1+MEM2    1511.64um
+  MEM1+SRAM    52360.55um
+  MEM2         2466557.24um
+  MEM2+SRAM    52920.40um
+  SRAM         1057525.14um
+  Z.OTHER      2572698.55um
+
+Z.OTHER breakdown:
+  Repeaters / fix buffers / antenna diodes       2091998.51um    5474 nets
+  Output buffer nets                              371087.10um    5680 nets
+  Clock tree                                       80294.91um      95 nets
+  Input buffer nets                                28631.89um     337 nets
+  Port-only nets                                     686.14um      48 nets
+
+[INFO GRT-0279] Detailed route wire length by layer:
+Layer    Wire length  Percentage
+--------------------------------
+met1    3778801.12um    43%
+met2    3077534.85um    35%
+met3    1504824.54um    17%
+met4    329738.97um     3%
+met5    93676.67um     1%
+--------------------------------
+
+Design area 15241466 um^2 63% utilization.
+
+================================================================
+
+OpenROAD dcf36133a369abc8f3c5e5738cd4d82e4903c0e0
+Features included (+) or not (-): +GPU +GUI +Python
+This program is licensed under the BSD-3 license. See the LICENSE file for details.
+Components of this program may be licensed under more restrictive licenses which must be honored.
+
+================================================================
+
+Checking Final Power Estimation
+
+================================================================
+
+Group                  Internal  Switching    Leakage      Total
+                          Power      Power      Power      Power (Watts)
+----------------------------------------------------------------
+Sequential             3.90e-03   4.08e-04   2.94e-08   4.31e-03  27.1%
+Combinational          4.81e-03   2.17e-03   1.37e-07   6.98e-03  43.8%
+Clock                  1.32e-03   6.96e-04   6.56e-06   2.03e-03  12.7%
+Macro                  2.54e-03   0.00e+00   7.72e-05   2.62e-03  16.4%
+Pad                    0.00e+00   0.00e+00   0.00e+00   0.00e+00   0.0%
+----------------------------------------------------------------
+Total                  1.26e-02   3.28e-03   7.73e-05   1.59e-02 100.0%
+                          78.9%      20.6%       0.5%
+
+IR Drop Reports:
+
+[INFO PSM-0040] All shapes on net VPWR are connected.
+########## IR report #################
+Net              : VPWR
+Corner           : default
+Total power      : 1.59e-02 W
+Supply voltage   : 1.80e+00 V
+Worstcase voltage: 1.80e+00 V
+Average voltage  : 1.80e+00 V
+Average IR drop  : 3.72e-06 V
+Worstcase IR drop: 4.05e-04 V
+Percentage drop  : 0.02 %
+######################################
+
+[INFO PSM-0040] All shapes on net VGND are connected.
+########## IR report #################
+Net              : VGND
+Corner           : default
+Total power      : 1.59e-02 W
+Supply voltage   : 0.00e+00 V
+Worstcase voltage: 3.27e-04 V
+Average voltage  : 3.64e-06 V
+Average IR drop  : 3.64e-06 V
+Worstcase IR drop: 3.27e-04 V
+Percentage drop  : 0.02 %
+######################################
+
+================================================================
