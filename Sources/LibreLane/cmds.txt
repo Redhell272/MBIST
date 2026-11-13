@@ -5,7 +5,7 @@ clear
 rm -rf ~/my_designs/MBIST/Sources/LibreLane/runs
 librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --skip KLayout.Render --skip KLayout.DRC --skip Magic.DRC --skip Checker.XOR
 
-librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --from Magic.SpiceExtraction --skip KLayout.Render --skip KLayout.DRC --skip Magic.DRC --skip Checker.XOR
+librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --skip KLayout.Render --skip KLayout.DRC --skip Magic.DRC --skip Checker.XOR
 
 librelane ~/my_designs/MBIST/Sources/LibreLane/config.json --last-run --flow openinklayout
 -or-
